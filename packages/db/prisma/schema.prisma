@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String?
+  avatarUrl  String?
+  createdAt  DateTime @default(now())
+
+  drives      DriveParticipant[]
+  dirtySpots  DirtySpot[]
+  verifications DriveVerification[]
+  badges      UserBadge[]
+  tasks       Task[]
+  notifications Notification[]
+}
+
+model Drive {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        DriveType // clean / plant / recycle
+  date        DateTime
+  lat         Float
+  lng         Float
+  imageUrl    String?
+  createdBy   String
+  createdAt   DateTime @default(now())
+
+  participants   DriveParticipant[]
+  dirtySpots     DirtySpot[]
+  tasks          Task[]
+  verification   DriveVerification?
+}
+
+model DriveParticipant {
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  drive    Drive    @relation(fields: [driveId], references: [id])
+  driveId  String
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, driveId])
+}
+
+model DirtySpot {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  drive      Drive    @relation(fields: [driveId], references: [id])
+  driveId    String
+  lat        Float
+  lng        Float
+  imageUrl   String?
+  description String?
+  createdAt  DateTime @default(now())
+
+  votes      SpotVote[]
+}
+
+model SpotVote {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  spot       DirtySpot @relation(fields: [spotId], references: [id])
+  spotId     String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, spotId])
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  drive     Drive    @relation(fields: [driveId], references: [id])
+  driveId   String
+  assignedTo User?   @relation(fields: [userId], references: [id])
+  userId    String?
+  title     String
+  done      Boolean  @default(false)
+  imageUrl  String?
+  createdAt DateTime @default(now())
+}
+
+model DriveVerification {
+  id        String   @id @default(cuid())
+  drive     Drive    @relation(fields: [driveId], references: [id])
+  driveId   String
+  verifier  User     @relation(fields: [verifierId], references: [id])
+  verifierId String
+  verified  Boolean
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  badge    String   // e.g. "5-drives", "streak-3", "top-voter"
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badge])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String   // join, reminder, task, etc.
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum DriveType {
+  CLEAN
+  PLANT
+  RECYCLE
+}

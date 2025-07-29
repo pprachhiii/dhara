@@ -1,0 +1,11 @@
+{
+  "extends": "./packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@dhara/ui": ["packages/ui/src"],
+      "@dhara/config": ["packages/config"],
+      "@dhara/utils": ["packages/utils/src"]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@dhara/utils",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "dev": "echo 'No dev server in utils'",
+    "build": "echo 'Build step for utils not required'"
+  }
+}

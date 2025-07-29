@@ -1,0 +1,15 @@
+{
+  "name": "@dhara/config",
+  "version": "0.1.0",
+  "main": "./tailwind.config.ts",
+  "types": "./tailwind.config.ts",
+  "description": "Shared config for Tailwind, ESLint, etc.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./eslint.config.mjs": "./eslint.config.mjs",
+    "./tailwind.config": "./tailwind.config.ts",
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./prettier.config": "./prettier.config.js"
+  }
+}

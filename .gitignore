@@ -1,0 +1,55 @@
+# ----------------------------
+#  Node & Package Managers
+**/node_modules
+.pnpm
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----------------------------
+# Environment Files
+.env
+**/.env
+
+# ----------------------------
+# Build Output
+**/dist
+**/.next
+**/out
+**/build
+**/*.tsbuildinfo
+next-env.d.ts
+
+# ----------------------------
+#  Database + Prisma
+**/prisma/dev.db
+**/prisma/migrations/
+
+# ----------------------------
+# UI Cache
+apps/web/.shadcn
+
+# ----------------------------
+# Testing
+coverage/
+
+# ----------------------------
+# IDE/Editor & OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+*.pem
+
+# ----------------------------
+# Turbo Cache
+.turbo
+
+# ----------------------------
+# Generated Prisma (if using codegen)
+packages/db/generated/prisma
+
+# ----------------------------
+# Hosting/Vercel
+.vercel
