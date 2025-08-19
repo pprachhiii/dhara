@@ -1,180 +1,131 @@
-```md
-# Dhara — Decentralized Cleanup Drive Coordinator 🧹🌍
+```markdown
+# 🌿 DHARA - Community-Driven Environmental Platform
 
-**Mission:**  
-Empower local citizens in Indian tier-2 & semi-urban cities to coordinate cleanup drives — without waiting for government action.
-
-Users can mark garbage spots, vote on priorities, join or create drives, upload proof, and track collective impact.
+**A platform for citizens to report, organize, and participate in cleaning drives while supporting mental well-being, inclusivity, and sustainability.**
 
 ---
 
-## ⚙️ Tech Stack
+## **Table of Contents**
 
-| Layer          | Stack / Tooling                                  |
-| -------------- | ------------------------------------------------ |
-| **Frontend**   | Next.js (App Router), Tailwind CSS, shadcn/ui    |
-| **Backend**    | Node.js, Express.js, Neon PostgreSQL, Prisma ORM |
-| **Auth**       | Clerk                                            |
-| **Real-time**  | Pusher (optional: future live updates)           |
-| **Maps**       | Leaflet.js + OpenStreetMap (no credentials)      |
-| **Uploads**    | ImageKit (secure, optimized delivery)            |
-| **Storage**    | PostgreSQL + PostGIS (geospatial)                |
-| **Caching**    | Redis via Upstash                                |
-| **Deployment** | Vercel (frontend), Render or Railway (API)       |
-| **CI/CD**      | GitHub Actions + Husky pre-commit hooks          |
+1. [Project Overview](#project-overview)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Project Structure](#project-structure)
+5. [Setup & Installation](#setup--installation)
+6. [Usage](#usage)
+7. [License](#license)
 
 ---
 
-## 🚀 MVP Features
+## **Project Overview**
 
-| Feature              | Description                                                                |
-| -------------------- | -------------------------------------------------------------------------- |
-| **Auth**             | Clerk-based login (email, Google, no Aadhaar nonsense)                     |
-| **Create Drive**     | Pin location on map, add type (clean, plant, recycle), upload before image |
-| **Join Drive**       | See upcoming drives filtered by location, time, and vote urgency           |
-| **Vote on Areas**    | Mark garbage zones; upvote to prioritize                                   |
-| **Progress Tracker** | Upload after photos, show contributors, drive status                       |
-| **Reminders & XP**   | Email/local reminders, streaks, gamified XP for contributions              |
+DHARA is a community-driven platform designed to tackle environmental neglect and promote civic responsibility in India. It empowers citizens of all ages and backgrounds-students, professionals, homemakers, children, and the elderly-to actively participate in cleaning and greening their neighborhoods according to their availability and comfort.
 
----
+Key goals of DHARA:
 
-## 🔮 Future Enhancements
+- **Report and Raise Awareness:** Citizens can report dirty or neglected areas by uploading images, videos, and descriptions. This ensures that communities are aware of problem spots that need attention.
+- **Organize and Participate in Drives:** Cleaning drives are scheduled based on community votes, allowing individuals to join activities that fit their personal schedules. This flexible system ensures maximum participation, even for those with unconventional routines or commitments.
+- **Track Real Impact:** The platform monitors progress using before-and-after visuals, trees planted, and recyclable waste processed. This fosters accountability and encourages long-term engagement.
+- **Enhance Community and Mental Well-Being:** DHARA offers low-pressure participation, micro-tasks, and optional social interaction. Even those who are introverted or dealing with mental health challenges can contribute meaningfully by simply being present.
+- **Sustainability and Aesthetics:** Cleaned areas are not only maintained but also beautified, with trees planted and waste sent to proper recycling facilities. The goal is to create spaces that communities are proud of and motivated to protect.
 
-| Area                | Feature                                         |
-| ------------------- | ----------------------------------------------- |
-| **Gamification**    | Leaderboards, XP levels, contribution timeline  |
-| **Languages**       | Hindi, Marathi, Gujarati, Kannada, Bengali      |
-| **NGO Mode**        | Org accounts to manage their own team & drives  |
-| **Offline Support** | Queue drive joins/uploads while offline         |
-| **Moderation**      | Spam/vote abuse detection                       |
-| **Impact Metrics**  | Visualize cleaned areas, types, frequency       |
-| **UPI Rewards**     | Optional micro-donations from NGO to volunteers |
+DHARA is more than a cleaning platform - it’s a movement for environmental consciousness, civic engagement, and mental wellness, designed to make it easy for anyone to contribute to a cleaner, greener, and healthier community.
 
 ---
 
-## 🧠 Architecture Notes
+## **Features**
 
-| Concept            | Notes                                                             |
-| ------------------ | ----------------------------------------------------------------- |
-| **Atomic Actions** | Use `Prisma.$transaction()` to group drive + participant creation |
-| **Redis Caching**  | Vote throttling, caching nearby drives                            |
-| **PostGIS Use**    | For geospatial bounding box, within-radius queries                |
-| **Signed Uploads** | ImageKit signed uploads prevent abuse                             |
-| **Monorepo**       | PNPM + Turborepo for unified DX                                   |
+- **User Authentication:** Sign-up/login using **NextAuth**.
+- **Flexible Drives:** Users can choose times and tasks according to their schedule.
+- **Report Areas:** Upload images/videos and provide details of neglected areas.
+- **Voting & Participation:** Community votes on drives and schedules.
+- **Impact Tracking:** Track cleaned areas, trees planted, and garbage collected.
+- **Mental Health Friendly:** Silent participation, micro-tasks, and non-social contributions.
+- **Image Handling:** Optimized image upload and delivery using **ImageKit**.
+- **Admin Verification:** Verify reported areas before drives.
 
 ---
 
-## 📁 Folder Structure (Turborepo)
+## **Tech Stack**
+
+- **Frontend & Backend:** Next.js + TypeScript (Monorepo)
+- **Authentication:** NextAuth.js
+- **Database:** PostgreSQL
+- **ORM:** Neon
+- **Image Upload & CDN:** ImageKit
+- **Hosting:** Vercel
+- **Caching & Rate Limiting:** Upstash Redis
+- **Cron Jobs:** For reminders, notifications, and recurring tasks
+
+---
+
+## **Project Structure**
 ```
 
 /dhara
-├── apps/
-│ ├── api/ # Express + Prisma backend
-│ │ ├── src/
-│ │ │ ├── controllers/
-│ │ │ ├── routes/
-│ │ │ ├── services/
-│ │ │ ├── middlewares/
-│ │ │ ├── utils/
-│ │ │ └── index.ts
-│ │ ├── .env # API-only secrets
-│ │ ├── package.json
-│ │ └── tsconfig.json
-│
-│ └── web/ # Next.js frontend
-│ ├── app/ # App Router pages
-│ ├── components/ # UI components
-│ ├── lib/ # Helpers: auth, uploads, maps
-│ ├── public/ # Static files
-│ ├── styles/ # Tailwind / global styles
-│ ├── .env # NEXT_PUBLIC\_ keys only
-│ ├── package.json
-│ ├── tailwind.config.ts
-│ ├── postcss.config.mjs
-│ └── tsconfig.json
-│
-├── packages/
-│ ├── db/ # Prisma schema, client, migrations
-│ │ ├── prisma/
-│ │ │ ├── schema.prisma
-│ │ │ └── migrations/
-│ │ ├── .env # DATABASE_URL only
-│ │ └── package.json
-│
-│ ├── config/ # Shared tsconfig, tailwind, eslint
-│ │ ├── tsconfig.base.json
-│ │ ├── tailwind.config.ts
-│ │ ├── eslint.config.mjs
-│ │ └── prettier.config.js
-│
-│ ├── utils/ # Shared logic (auth, geo, types)
-│ │ ├── auth.ts
-│ │ ├── geo.ts
-│ │ └── index.ts
-│
-│ └── ui/ # Centralized shadcn/ui wrapper components
-│ ├── button.tsx
-│ ├── input.tsx
-│ └── index.ts
-│
-├── .env.example # Template for environment vars
-├── .gitignore
-├── turbo.json # Turborepo pipeline
-├── pnpm-workspace.yaml
-├── package.json
-└── README.md
+├── /apps
+│ └── web # Next.js app (frontend + backend)
+├── /packages
+│ ├── api # API logic, routes (e.g., /drives, /reports)
+│ ├── types # Shared TypeScript types
+│ ├── utils # Utility functions, helpers
+├── /public
+├── /styles
+├── next.config.js
+├── tsconfig.json
+└── package.json
 
 ````
 
----
+**Key API Routes:**
 
-## 🔐 Environment Variables
-
-| File                | Purpose                         | Example Keys                                                                 |
-|---------------------|----------------------------------|------------------------------------------------------------------------------|
-| `apps/api/.env`     | Private API creds               | `DATABASE_URL`, `UPSTASH_REDIS_REST_URL`, `IMAGEKIT_PRIVATE_KEY`           |
-| `apps/web/.env`     | Public frontend config          | `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY`, `NEXT_PUBLIC_API_BASE_URL`, etc.        |
-| `packages/db/.env`  | Prisma db url                   | `DATABASE_URL`                                                              |
+* `/api/auth` - Authentication
+* `/api/drives` - CRUD for cleaning drives
+* `/api/reports` - CRUD for reported dirty areas
+* `/api/users` - User profiles and participation history
 
 ---
 
-## 🏁 Getting Started
+## **Setup & Installation**
+
+1. Clone the repository:
 
 ```bash
-# Clone
-git clone https://github.com/your-org/dhara.git
+git clone https://github.com/yourusername/dhara.git
 cd dhara
-
-# Install
-pnpm install
-
-# Setup envs
-cp .env.example apps/web/.env
-cp .env.example apps/api/.env
-
-# Dev
-pnpm dev
 ````
 
+2. Install dependencies:
+
+```bash
+pnpm install
+```
+
+3. Set up environment variables.
+
+4. Run the development server:
+
+```bash
+pnpm dev
+```
+
 ---
 
-## 🚀 Deployment Plan
+## **Usage**
 
-| Platform     | App        | Notes                             |
-| ------------ | ---------- | --------------------------------- |
-| **Vercel**   | `apps/web` | Connect repo, auto deploy via CI  |
-| **Render**   | `apps/api` | Start with simple Node service    |
-| **Neon**     | DB         | Free tier + PostGIS support       |
-| **Upstash**  | Redis      | 10k req/day free tier             |
-| **ImageKit** | Uploads    | Public & signed upload separation |
+- **Sign Up / Login:** Create an account using Google or email.
+- **Report a Dirty Area:** Upload images/videos and provide location/details.
+- **Join a Drive:** Vote for preferred time and task.
+- **Track Impact:** View before/after pictures, trees planted, and garbage recycled.
+- **Silent Participation:** Choose micro-tasks if you prefer not to interact socially.
 
 ---
 
-## 🙌 Contribute
+## **License**
 
-Dhara is built by people who care.
-Raise issues, propose features, or just fork and ship improvements.
-Let’s clean things up — together.
+MIT License © 2025 DHARA
+
+---
 
 ```
 
