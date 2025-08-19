@@ -31,6 +31,10 @@ Key goals of DHARA:
 
 DHARA is more than a cleaning platform - it’s a movement for environmental consciousness, civic engagement, and mental wellness, designed to make it easy for anyone to contribute to a cleaner, greener, and healthier community.
 
+## **Live Demo**
+
+Check out the live platform here: [https://dhara-green.vercel.app/](https://dhara-green.vercel.app/)
+
 ---
 
 ## **Features**
