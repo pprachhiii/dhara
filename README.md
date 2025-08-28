@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# **DHARA**
 
-## Getting Started
+**Community-driven platform for environmental stewardship and civic responsibility in India**
 
-First, run the development server:
+DHARA empowers citizens of all ages—students, professionals, homemakers, children, and the elderly—to participate in cleaning, beautifying, and maintaining neighborhoods according to their availability, comfort, and mental well-being. It combines **reporting neglected areas**, **coordinated volunteer action**, **authority contact tracking**, and **mental-health-aware task assignment** to create a practical, inclusive, and accountable environmental movement.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## **Key Goals and Features**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. Report and Raise Awareness
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Citizens can report **dirty or neglected areas** by uploading images, videos, and descriptions.
+- Each report is logged in the platform with a **unique status** (e.g., pending, authority contacted, community cleaning).
 
-## Learn More
+### 2. Collaborate with Authorities
 
-To learn more about Next.js, take a look at the following resources:
+- DHARA first contacts the **official cleaning authorities** responsible for the reported area.
+- Volunteers can be **assigned to contact officials**.
+- Buttons for:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  - **Contact Official** → logs contact and disables button if already contacted.
+  - **Already Contacted** → shows the date/status of contact.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Follow-up reminders can be simulated or automated in future versions.
 
-## Deploy on Vercel
+### 3. Inclusive Task Assignment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Volunteers can **choose their comfort level**: solo, low-social, or group tasks.
+- Tasks are assigned accordingly, ensuring **even introverted or mentally exhausted participants** can contribute meaningfully.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 4. Organize and Participate in Drives
+
+- Cleaning and beautification drives are scheduled based on **community votes and availability**, maximizing participation.
+
+### 5. Track Real Impact
+
+- Progress is monitored using **before-and-after visuals**, **trees planted**, and **recyclables processed**, fostering accountability and long-term engagement.
+
+### 6. Sustainability and Aesthetics
+
+- Cleaned areas are **beautified and maintained**, promoting **pride and long-term community stewardship**.
+
+---
+
+## **Authority Contact Workflow**
+
+1. Citizen reports a neglected area.
+2. The system links the area to **relevant officials**.
+3. Volunteers are **assigned to contact authorities**.
+4. Status updates:
+
+   - Authority responded → DHARA focuses on beautification.
+   - Authority didn’t respond → community volunteers clean and escalate complaints.
+
+---
+
+## **Hackathon / MVP Scope**
+
+- Fully implemented: reporting areas, authority contact simulation, task assignment based on comfort, status tracking, basic UI to show lists and progress.
+- Simulated / demo-only: real emails/notifications to authorities, waiting for actual response, full analytics dashboards.
+- Future expansion: automated authority notifications, AI-based task recommendations, real-world cleanup scheduling, real-time impact dashboards.
+
+---
+
+## **Tech Stack**
+
+- **Frontend:** Next.js + ShadCN/UI + Tailwind CSS
+- **Backend:** Next.js API routes + Node.js
+- **Database:** PostgreSQL (with Prisma ORM)
+- **HTTP/API:** Axios or native fetch for frontend-backend communication
+
+---
+
+## **Workflow Overview**
+
+1. Report neglected area → attach image/video + description.
+2. Authority contact → assigned volunteer contacts official; status updated.
+3. Volunteer task assignment → based on comfort level (solo/low-social/group).
+4. Cleaning/beautification drives → scheduled via community votes.
+5. Track impact → before/after visuals, trees planted, recyclables processed.
+
+---
