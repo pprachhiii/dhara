@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,35 +8,65 @@ datasource db {
 }
 
 model Report {
-  id String @id @default(cuid())
-  reporter String
-  title String
-  description String
-  imageUrl String?
-  status  ReportStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tasks Task[]
+  id                String             @id @default(cuid())
+  reporter          String
+  title             String
+  description       String
+  imageUrl          String?
+  status            ReportStatus       @default(PENDING)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  tasks             Task[]
+  reportAuthorities ReportAuthority[]
 }
 
 model Task {
-  id  String @id @default(cuid())
-  reportId String
-  report Report @relation(fields: [reportId], references: [id])
-  comfort SocializingLevel
-  assignedTo  String?
-  status  TaskStatus @default(OPEN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String           @id @default(cuid())
+  reportId   String
+  report     Report           @relation(fields: [reportId], references: [id])
+  comfort    SocializingLevel
+  assignedTo String?
+  status     TaskStatus       @default(OPEN)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 }
 
 model Drive {
-  id  String @id @default(cuid())
+  id          String    @id @default(cuid())
   participant Int
-  date DateTime
-  title String
+  date        DateTime
+  title       String
   description String?
-  createdAt DateTime @default(now())
+  createdAt   DateTime  @default(now())
+}
+
+model Authority {
+  id                String             @id @default(cuid())
+  name              String
+  type              AuthorityType
+  city              String
+  region            String?            // optional: ward / neighborhood
+  email             String?
+  phone             String?
+  website           String?
+  active            Boolean            @default(false) // starts as FALSE, verified later
+  submittedBy       String?            // optional: user who submitted
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  reportAuthorities ReportAuthority[]
+}
+
+model ReportAuthority {
+  id          String        @id @default(cuid())
+  report      Report        @relation(fields: [reportId], references: [id])
+  reportId    String
+  authority   Authority     @relation(fields: [authorityId], references: [id])
+  authorityId String
+  volunteer   String?       // who contacted
+  status      ContactStatus @default(PENDING)
+  contactedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 enum ReportStatus {
@@ -62,4 +86,17 @@ enum SocializingLevel {
   SOLO
   DUAL
   GROUP
+}
+
+enum AuthorityType {
+  GOVERNMENT
+  NGO
+  LEGAL
+}
+
+enum ContactStatus {
+  PENDING
+  CONTACTED
+  RESPONDED
+  NO_RESPONSE
 }
