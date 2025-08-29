@@ -1,189 +1,144 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Report } from "@/lib/types";
 import toast from "react-hot-toast";
 
 export default function ReportPage() {
   const [reports, setReports] = useState<Report[]>([]);
-  const [form, setForm] = useState({
-    reporter: "",
-    title: "",
-    description: "",
-    imageUrl: "",
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
+  const statuses = ["ALL", "PENDING", "IN_PROGRESS", "RESOLVED", "AUTHORITY_CONTACTED"];
 
   useEffect(() => {
+    const loadReports = async () => {
+      const query = new URLSearchParams();
+      if (statusFilter !== "ALL") query.append("status", statusFilter);
+      if (searchQuery) query.append("search", searchQuery);
+
+      const data: Report[] = await fetch(`/api/reports?${query.toString()}`).then(
+        (res) => res.json()
+      );
+      setReports(data);
+    };
+
     loadReports();
-  }, []);
-
-  async function loadReports() {
-    const data: Report[] = await fetch("/api/reports").then((res) =>
-      res.json()
-    );
-    setReports(data);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (editingId) {
-      await fetch(`/api/reports/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      toast.success("✅ Report updated successfully!");
-      setEditingId(null);
-    } else {
-      await fetch("/api/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      toast.success("🎉 Report submitted!");
-    }
-
-    setForm({ reporter: "", title: "", description: "", imageUrl: "" });
-    setShowForm(false);
-    loadReports();
-  }
+  }, [statusFilter, searchQuery]);
 
   async function handleDelete(id: string) {
     await fetch(`/api/reports/${id}`, { method: "DELETE" });
     toast("🗑️ Report deleted");
-    loadReports();
-  }
 
-  function handleEdit(report: Report) {
-    setEditingId(report.id);
-    setForm({
-      reporter: report.reporter,
-      title: report.title,
-      description: report.description,
-      imageUrl: report.imageUrl ?? "",
-    });
-    setShowForm(true);
-  }
+    const query = new URLSearchParams();
+    if (statusFilter !== "ALL") query.append("status", statusFilter);
+    if (searchQuery) query.append("search", searchQuery);
 
-  async function handleSee(report: Report) {
-    // Show report info as a toast instead of alert
-    toast(
-      <div className="text-left">
-        <strong>{report.title}</strong>
-        <p className="text-sm">By: {report.reporter}</p>
-        <p>{report.description}</p>
-      </div>,
-      { duration: 5000 }
+    const data: Report[] = await fetch(`/api/reports?${query.toString()}`).then(
+      (res) => res.json()
     );
+    setReports(data);
+  }
+
+  function handleSee(report: Report) {
+    setSelectedReport(report);
+  }
+
+  function closeModal() {
+    setSelectedReport(null);
   }
 
   return (
-    <div className="h-screen flex">
-      {/* Left Panel - Reports */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Community Reports</h1>
-        <div className="space-y-4">
-          {reports.map((r) => (
-            <Card key={r.id}>
-              <CardHeader>
-                <CardTitle>{r.title}</CardTitle>
-                <p className="text-sm text-gray-500">By {r.reporter}</p>
-              </CardHeader>
-              <CardContent>
-                <p>{r.description}</p>
-                {r.imageUrl && (
-                  <div className="relative w-full h-48 mt-2">
-                    <Image
-                      src={r.imageUrl}
-                      alt="report"
-                      fill
-                      className="rounded-lg object-cover"
-                    />
-                  </div>
-                )}
-                <p className="text-sm text-gray-500 mt-2">
-                  Status: {r.status}
-                </p>
+    <div className="h-screen overflow-y-auto p-6 relative">
+      <h1 className="text-3xl font-bold mb-6">Community Reports</h1>
 
-                <div className="flex gap-2 mt-4">
-                  <Button variant="outline" onClick={() => handleSee(r)}>
-                    See
-                  </Button>
-                  <Button variant="secondary" onClick={() => handleEdit(r)}>
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => handleDelete(r.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Right Panel - Form */}
-      <div
-        className={`transition-all duration-300 border-l bg-gray-50 p-4 
-          ${showForm ? "w-1/4" : "w-16 flex items-start justify-center"}`}
-      >
-        {showForm ? (
-          <form onSubmit={handleSubmit} className="space-y-4 w-full">
-            <h2 className="text-xl font-semibold mb-2">
-              {editingId ? "Edit Report" : "New Report"}
-            </h2>
-            <Input
-              placeholder="Your name"
-              value={form.reporter}
-              onChange={(e) => setForm({ ...form, reporter: e.target.value })}
-            />
-            <Input
-              placeholder="Title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-            <Textarea
-              placeholder="Description"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Image URL"
-              value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-            />
-            <div className="flex gap-2">
-              <Button type="submit" className="w-full">
-                {editingId ? "Update" : "Submit"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowForm(false)}
-              >
-                Close
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <Button onClick={() => setShowForm(true)} className="mt-2">
-            +
+      {/* Filters & Search */}
+      <div className="flex flex-wrap gap-3 mb-6 items-center">
+        {statuses.map((status) => (
+          <Button
+            key={status}
+            variant={statusFilter === status ? "default" : "outline"}
+            onClick={() => setStatusFilter(status)}
+          >
+            {status === "ALL" ? "All Reports" : status.replace("_", " ")}
           </Button>
-        )}
+        ))}
+
+        <Input
+          placeholder="Search by title or description"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="ml-auto max-w-xs"
+        />
       </div>
+
+      {/* Reports List */}
+      <div className="space-y-4">
+        {reports.map((r) => (
+          <Card key={r.id}>
+            <CardHeader>
+              <CardTitle>{r.title}</CardTitle>
+              <p className="text-sm text-gray-500">By {r.reporter}</p>
+            </CardHeader>
+            <CardContent>
+              <p>{r.description}</p>
+              {r.imageUrl && (
+                <div className="relative w-full h-48 mt-2">
+                  <Image
+                    src={r.imageUrl}
+                    alt="report"
+                    fill
+                    className="rounded-lg object-cover"
+                  />
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mt-2">Status: {r.status}</p>
+
+              <div className="flex gap-2 mt-4">
+                <Button variant="outline" onClick={() => handleSee(r)}>
+                  See
+                </Button>
+                <Button variant="destructive" onClick={() => handleDelete(r.id)}>
+                  Delete
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Modal */}
+      {selectedReport && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
+              onClick={closeModal}
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold mb-2">{selectedReport.title}</h2>
+            <p className="text-sm text-gray-500 mb-4">By {selectedReport.reporter}</p>
+            <p className="mb-4">{selectedReport.description}</p>
+            {selectedReport.imageUrl && (
+              <div className="relative w-full h-64 mb-4">
+                <Image
+                  src={selectedReport.imageUrl}
+                  alt="report"
+                  fill
+                  className="rounded-lg object-cover"
+                />
+              </div>
+            )}
+            <p className="text-sm text-gray-500">Status: {selectedReport.status}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo / Brand */}
         <Link href="/" className="text-2xl font-bold text-blue-600">
-          🌍 Dhara
+          Dhara
         </Link>
 
         {/* Links */}
@@ -43,16 +43,15 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Action button */}
+        {/* Action button for creating a new report */}
         <div className="hidden md:flex">
           <Button asChild>
-            <Link href="/report">+ New Report</Link>
+            <Link href="/report-form">+ New Report</Link>
           </Button>
         </div>
 
-        {/* Mobile Hamburger */}
-        <div className="md:hidden">
-        </div>
+        {/* Mobile Hamburger (optional) */}
+        <div className="md:hidden"></div>
       </div>
     </nav>
   );
