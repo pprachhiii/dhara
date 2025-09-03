@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ContactStatus } from "@prisma/client";
+import { Context } from "@/lib/context";
 
 // GET /api/reportAuthorities/:id
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   try {
     const { id } = await context.params;
@@ -28,7 +29,7 @@ export async function GET(
 // PATCH /api/reportAuthorities/:id
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   try {
     const { id } = await context.params;
@@ -55,7 +56,7 @@ export async function PATCH(
 // DELETE /api/reportAuthorities/:id
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   try {
     const { id } = await context.params;

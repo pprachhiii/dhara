@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AuthorityType } from "@prisma/client";
+import { Context } from "@/lib/context";
 
 // GET /api/authority/:id
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: Context
 ) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     const authority = await prisma.authority.findUnique({ where: { id } });
 
     if (!authority) {
@@ -24,9 +25,9 @@ export async function GET(
 // PUT /api/authority/:id
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: Context
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const data = await request.json();
 
   try {
@@ -56,9 +57,9 @@ export async function PUT(
 // DELETE /api/authority/:id
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: Context
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   try {
     await prisma.authority.delete({ where: { id } });

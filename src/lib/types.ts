@@ -1,7 +1,7 @@
 export type ReportStatus = "PENDING" | "AUTHORITY_CONTACTED" | "IN_PROGRESS" | "RESOLVED";
 export type TaskStatus = "OPEN" | "ASSIGNED" | "DONE";
 export type SocializingLevel = "SOLO" | "DUAL" | "GROUP";
-export type AuthorityType = "GOVERNMENT" | "NGO" | "LEGAL";
+export type AuthorityType = "GOVERNMENT" | "NGO" | "OTHERS";
 export type ContactStatus = "PENDING" | "CONTACTED" | "RESPONDED" | "NO_RESPONSE";
 
 // Entities

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Context } from "@/lib/context";
 
 // GET: Get a single task by ID
 export async function GET(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   const { id } = await context.params;
   const task = await prisma.task.findUnique({ where: { id } });
@@ -15,7 +16,7 @@ export async function GET(
 // PATCH: Update a task by ID
 export async function PATCH(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   const { id } = await context.params;
   const data = await req.json();
@@ -31,7 +32,7 @@ export async function PATCH(
 // DELETE: Delete a task by ID
 export async function DELETE(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   const { id } = await context.params;
 

@@ -1,10 +1,11 @@
+import { Context } from "@/lib/context";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/reports/:id
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   try {
     const { id } = await context.params;
@@ -23,7 +24,7 @@ export async function GET(
 // PATCH /api/reports/:id
 export async function PATCH(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   const { id } = await context.params;
   const data = await request.json();
@@ -48,7 +49,7 @@ export async function PATCH(
 // DELETE /api/reports/:id
 export async function DELETE(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: Context
 ) {
   const { id } = await context.params;
 
