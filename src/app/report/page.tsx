@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Report } from "@/lib/types";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 export default function ReportPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -55,7 +56,13 @@ export default function ReportPage() {
 
   return (
     <div className="h-screen overflow-y-auto p-6 relative">
-      <h1 className="text-3xl font-bold mb-6">Community Reports</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Community Reports</h1>
+        <Button asChild>
+          <Link href="/authority" className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition">View Authorities</Link>
+        </Button>
+      </div>
+
 
       {/* Filters & Search */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">

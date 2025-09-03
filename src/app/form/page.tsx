@@ -19,20 +19,7 @@ function FormContent() {
 
   return (
     <div className="p-6">
-      {/* Model Switch Buttons */}
-      <div className="flex gap-4 mb-4">
-        {(["Report", "Task", "Drive", "Authority"] as ModelType[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => setModel(m)}
-            className={`px-4 py-2 rounded ${
-              model === m ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"
-            }`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
+      
 
       {/* Render CreateForm */}
       <CreateForm model={model} />

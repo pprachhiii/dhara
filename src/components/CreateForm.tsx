@@ -70,12 +70,28 @@ export default function CreateForm({ model }: CreateFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // map each model to its correct API endpoint
+    const endpointMap: Record<ModelType, string> = {
+      Report: "/api/reports",
+      Task: "/api/tasks",
+      Drive: "/api/drives",
+      Authority: "/api/authority", // singular!
+    };
+
     try {
-      await fetch(`/api/${model.toLowerCase()}s`, {
+      const res = await fetch(endpointMap[model], {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Failed response:", err);
+        throw new Error(err.error || "Request failed");
+      }
+
       toast.success(`${model} created successfully!`);
       router.push(`/${model.toLowerCase()}`);
     } catch (error) {

@@ -28,6 +28,7 @@ export default async function HomePage() {
           >
             Make an Impact
           </Link>
+
           <Link
             href="/about"
             className="px-6 py-3 border border-gray-300 bg-white rounded-xl shadow hover:bg-gray-50 transition"
@@ -65,21 +66,17 @@ export default async function HomePage() {
       <section className="bg-blue-600 text-white rounded-2xl p-10 max-w-3xl w-full text-center mb-16 shadow-lg">
         <h2 className="text-3xl font-bold mb-4">Join the Change Today</h2>
         <p className="mb-6">Submit your first report and see the direct impact it can have in your area.</p>
-        <Link
-          href="/report"
-          className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl shadow hover:bg-gray-100 transition"
-        >
-          Submit a Report
-        </Link>
+          <Link
+            href="/form?model=Report"
+            className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl shadow hover:bg-gray-100 transition"
+          >
+            Submit a Report
+          </Link>
       </section>
 
       {/* Footer */}
       <footer className="mt-12 text-sm text-gray-500 flex flex-col items-center gap-2">
         <p>Made with ❤️ for the community</p>
-        <div className="flex gap-4">
-          <Link href="#" className="hover:underline">Twitter</Link>
-          <Link href="#" className="hover:underline">GitHub</Link>
-        </div>
       </footer>
     </main>
   );
