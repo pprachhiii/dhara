@@ -3,8 +3,7 @@ import React from "react";
 export default function TaskAssignPage() {
   return (
     <div>
-      <h1>Tasks</h1>
-      <p>Task will go here.</p>
+      <h1>Authorties</h1>
     </div>
   );
 }

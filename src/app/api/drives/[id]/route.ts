@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/drives/:id
-export async function GET({ params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const drive = await prisma.drive.findUnique({
-      where: { id: params.id },
-    });
+    const { id } = await context.params;
+    const drive = await prisma.drive.findUnique({ where: { id } });
 
     if (!drive) {
       return NextResponse.json({ error: "Drive not found" }, { status: 404 });
@@ -19,12 +21,16 @@ export async function GET({ params }: { params: { id: string } }) {
 }
 
 // PATCH /api/drives/:id
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
     const data = await request.json();
 
     const updatedDrive = await prisma.drive.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         participant: data.participant,
         date: data.date ? new Date(data.date) : undefined,
@@ -40,9 +46,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/drives/:id
-export async function DELETE({ params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    await prisma.drive.delete({ where: { id: params.id } });
+    const { id } = await context.params;
+    await prisma.drive.delete({ where: { id } });
     return NextResponse.json({ message: "Drive deleted successfully" });
   } catch {
     return NextResponse.json({ error: "Drive not found" }, { status: 404 });

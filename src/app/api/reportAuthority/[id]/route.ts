@@ -3,10 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { ContactStatus } from "@prisma/client";
 
 // GET /api/reportAuthorities/:id
-export async function GET({ params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
+
     const record = await prisma.reportAuthority.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { report: true, authority: true },
     });
 
@@ -15,23 +20,28 @@ export async function GET({ params }: { params: { id: string } }) {
     }
 
     return NextResponse.json(record);
-  } catch  {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch record" }, { status: 500 });
   }
 }
 
 // PATCH /api/reportAuthorities/:id
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await context.params;
     const data = await request.json();
 
     const updatedRecord = await prisma.reportAuthority.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         volunteer: data.volunteer ?? undefined,
-        status: data.status && Object.values(ContactStatus).includes(data.status)
-          ? (data.status as ContactStatus)
-          : undefined,
+        status:
+          data.status && Object.values(ContactStatus).includes(data.status)
+            ? (data.status as ContactStatus)
+            : undefined,
         contactedAt: data.contactedAt ? new Date(data.contactedAt) : undefined,
       },
     });
@@ -43,9 +53,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/reportAuthorities/:id
-export async function DELETE({ params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    await prisma.reportAuthority.delete({ where: { id: params.id } });
+    const { id } = await context.params;
+    await prisma.reportAuthority.delete({ where: { id } });
     return NextResponse.json({ message: "Record deleted successfully" });
   } catch {
     return NextResponse.json({ error: "Record not found" }, { status: 404 });
