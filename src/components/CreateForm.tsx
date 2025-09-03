@@ -20,7 +20,7 @@ interface CreateFormProps {
 // Runtime arrays for selects
 const SOCIALIZING_LEVELS: SocializingLevel[] = ["SOLO", "DUAL", "GROUP"];
 const TASK_STATUSES: TaskStatus[] = ["OPEN", "ASSIGNED", "DONE"];
-const AUTHORITY_TYPES: AuthorityType[] = ["GOVERNMENT", "NGO", "LEGAL"];
+const AUTHORITY_TYPES: AuthorityType[] = ["GOVERNMENT", "NGO", "OTHERS"];
 
 export default function CreateForm({ model }: CreateFormProps) {
   const router = useRouter();
