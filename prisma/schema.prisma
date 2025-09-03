@@ -91,7 +91,7 @@ enum SocializingLevel {
 enum AuthorityType {
   GOVERNMENT
   NGO
-  LEGAL
+  OTHERS
 }
 
 enum ContactStatus {

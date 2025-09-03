@@ -15,7 +15,7 @@ export default function Navbar() {
           Dhara
         </Link>
 
-        {/* Links */}
+        {/* Navigation Links */}
         <div className="hidden md:flex gap-6 items-center">
           <Link
             href="/"
@@ -43,14 +43,17 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Action button for creating a new report */}
-        <div className="hidden md:flex">
+        {/* Action buttons: only Report & Authority */}
+        <div className="hidden md:flex gap-2">
           <Button asChild>
-            <Link href="/report-form">+ New Report</Link>
+            <Link href="/form?model=Report">+ New Report</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/form?model=Authority">+ New Authority</Link>
           </Button>
         </div>
 
-        {/* Mobile Hamburger (optional) */}
+        {/* Mobile Hamburger placeholder */}
         <div className="md:hidden"></div>
       </div>
     </nav>
