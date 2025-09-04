@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { Report, ReportStatus} from "@/lib/types";
+import { Report, ReportStatus } from "@/lib/types";
 import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
@@ -15,6 +15,8 @@ export default function ReportPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
+  const [creatingDrive, setCreatingDrive] = useState<Report | null>(null); // New state
+  const [creatingReport, setCreatingReport] = useState(false);
 
   const statuses: (ReportStatus | "ALL")[] = ["ALL", ...Object.values(ReportStatus)];
 
@@ -76,16 +78,22 @@ export default function ReportPage() {
     <div className="h-screen overflow-y-auto p-6 relative">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Community Reports</h1>
-        <Button asChild>
-          <Link
-            href="/authority"
-            className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
-          >
-            View Authorities
-          </Link>
-        </Button>
-      </div>
+  <h1 className="text-3xl font-bold">Community Reports</h1>
+  <div className="flex gap-3">
+    <Button onClick={() => setCreatingReport(true)}>
+      Create Report
+    </Button>
+    <Button asChild>
+      <Link
+        href="/authority"
+        className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
+      >
+        View Authorities
+      </Link>
+    </Button>
+  </div>
+</div>
+
 
       {/* Filters & Search */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">
@@ -145,9 +153,12 @@ export default function ReportPage() {
                     </div>
                   )}
                 </td>
-                <td className="px-4 py-2 border">
+                <td className="px-4 py-2 border flex gap-2">
                   <Button size="sm" onClick={() => setSelectedReport(r)}>
                     See
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={() => setCreatingDrive(r)}>
+                    Create Drive
                   </Button>
                 </td>
               </tr>
@@ -256,6 +267,60 @@ export default function ReportPage() {
           </div>
         </div>
       )}
+
+      {/* Create Drive Form Modal */}
+      {creatingDrive && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
+              onClick={() => setCreatingDrive(null)}
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-bold mb-4">
+              Create Drive for `{creatingDrive.title}``
+            </h2>
+
+            <CreateForm
+              model="Drive"
+              initialValues={{
+                reportId: creatingDrive.id,
+                title: `${creatingDrive.title} Drive`,
+              }}
+              onClose={() => setCreatingDrive(null)}
+              onSuccess={async () => {
+                setCreatingDrive(null);
+                toast.success("Drive created successfully!");
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {/* Create Report Form Modal */}
+      {creatingReport && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
+              onClick={() => setCreatingReport(false)}
+            >
+              ✕
+            </button>
+
+            <CreateForm
+              model="Report"
+              onClose={() => setCreatingReport(false)}
+              onSuccess={async () => {
+                setCreatingReport(false);
+                await refreshReports();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

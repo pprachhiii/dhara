@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/table";
 import { Authority, AuthorityType, ReportAuthority, Report } from "@/lib/types";
 import toast from "react-hot-toast";
+import CreateForm from "@/components/CreateForm";
 
-// Define detailed authority type for modal
 type AuthorityDetail = Authority & {
   reportAuthorities?: (ReportAuthority & { report: Report })[];
 };
@@ -30,42 +30,36 @@ export default function AuthoritiesPage() {
   const [authorities, setAuthorities] = useState<Authority[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedAuthority, setSelectedAuthority] = useState<AuthorityDetail | null>(null);
+  const [creatingAuthority, setCreatingAuthority] = useState(false);
 
-  // Filters
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [type, setType] = useState("");
 
-  useEffect(() => {
-    const fetchAuthorities = async () => {
-      setLoading(true);
+  const fetchAuthorities = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    if (city) params.append("city", city);
+    if (region) params.append("region", region);
+    if (type) params.append("type", type);
 
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      if (city) params.append("city", city);
-      if (region) params.append("region", region);
-      if (type) params.append("type", type);
-
-      try {
-        const res = await fetch(`/api/authority?${params.toString()}`, { cache: "no-store" });
-        const data = await res.json();
-        if (!Array.isArray(data)) {
-          console.warn("API did not return an array!", data);
-          setAuthorities([]);
-        } else {
-          setAuthorities(data);
-        }
-      } catch (err) {
-        console.error("Error fetching authorities:", err);
-        toast.error("Failed to fetch authorities");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAuthorities();
+    try {
+      const res = await fetch(`/api/authority?${params.toString()}`, { cache: "no-store" });
+      const data = await res.json();
+      setAuthorities(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch authorities");
+    } finally {
+      setLoading(false);
+    }
   }, [search, city, region, type]);
+
+  useEffect(() => {
+    fetchAuthorities();
+  }, [fetchAuthorities]);
 
   const openAuthority = async (id: string) => {
     try {
@@ -79,11 +73,20 @@ export default function AuthoritiesPage() {
     }
   };
 
-  const closeModal = () => setSelectedAuthority(null);
-
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold mb-6">All Authorities</h1>
+    <div className="h-screen overflow-y-auto p-6 relative">
+      {/* Loading State */}
+      {loading ? (
+        <p>Loading authorities...</p>
+      ) : authorities.length === 0 ? (
+        <p>No authorities found.</p>
+      ) : null}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Authorities</h1>
+        <Button onClick={() => setCreatingAuthority(true)}>Create Authority</Button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
@@ -128,12 +131,8 @@ export default function AuthoritiesPage() {
         </Button>
       </div>
 
-      {/* Results */}
-      {loading ? (
-        <p>Loading authorities...</p>
-      ) : authorities.length === 0 ? (
-        <p>No authorities found.</p>
-      ) : (
+      {/* Authorities Table */}
+      {authorities.length > 0 && (
         <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
           <Table>
             <TableHeader>
@@ -182,13 +181,13 @@ export default function AuthoritiesPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Authority Details Modal */}
       {selectedAuthority && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
             <button
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-              onClick={closeModal}
+              onClick={() => setSelectedAuthority(null)}
             >
               ✕
             </button>
@@ -213,23 +212,40 @@ export default function AuthoritiesPage() {
                 "-"
               )}
             </p>
-
-            {/* Related Reports */}
-            {selectedAuthority.reportAuthorities?.length ? (
+            {selectedAuthority.reportAuthorities?.length && (
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">Related Reports</h3>
                 <ul className="list-disc list-inside text-sm">
-                  {selectedAuthority.reportAuthorities.map(
-                    (ra: ReportAuthority & { report: Report }) => (
-                      <li key={ra.id}>
-                        {ra.report.title} — Status: {ra.report.status}
-                      </li>
-                    )
-                  )}
+                  {selectedAuthority.reportAuthorities.map((ra) => (
+                    <li key={ra.id}>{ra.report.title} — Status: {ra.report.status}</li>
+                  ))}
                 </ul>
               </div>
-            ) : null}
+            )}
+          </div>
+        </div>
+      )}
 
+      {/* Create Authority Modal */}
+      {creatingAuthority && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
+              onClick={() => setCreatingAuthority(false)}
+            >
+              ✕
+            </button>
+
+            <CreateForm
+              model="Authority"
+              onClose={() => setCreatingAuthority(false)}
+              onSuccess={async () => {
+                setCreatingAuthority(false);
+                await fetchAuthorities();
+                toast.success("Authority created successfully!");
+              }}
+            />
           </div>
         </div>
       )}

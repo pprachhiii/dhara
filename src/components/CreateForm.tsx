@@ -194,12 +194,7 @@ export default function CreateForm({
           {initialValues ? "Update" : "Submit"} {model}
         </Button>
         {onClose && (
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={onClose}
-          >
+          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
             Cancel
           </Button>
         )}

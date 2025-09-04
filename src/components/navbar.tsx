@@ -42,13 +42,13 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Action buttons: only Report & Authority */}
+          {/* Action buttons: Tasks & Drives */}
           <div className="hidden md:flex gap-2 items-center">
             <Button asChild>
-              <Link href="/form?model=Report">+ New Report</Link>
+              <Link href="/tasks">Tasks</Link>
             </Button>
             <Button asChild>
-              <Link href="/form?model=Authority">+ New Authority</Link>
+              <Link href="/drives">Drives</Link>
             </Button>
             <Button onClick={() => setIsFeedbackOpen(true)}>Feedback</Button>
           </div>

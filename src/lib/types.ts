@@ -22,18 +22,20 @@ export type ReportVote = {
   reportId: string;
   createdAt: string;
 };
-
-export type Task = {
+export interface Task {
   id: string;
-  reportId: string;
-  driveId?: string;
-  volunteerId?: string;
-  comfort: SocializingLevel;
-  timeSlot?: string;
   status: TaskStatus;
+  comfort?: SocializingLevel;
+  timeSlot?: string | null;
+  report?: { id: string; title: string } | null;
+  drive?: { id: string; title: string } | null;
+  volunteer?: { id: string; name: string } | null;
+  reportId: string;
+  driveId?: string | null;
+  volunteerId?: string | null;
   createdAt: string;
   updatedAt: string;
-};
+}  
 
 export type Drive = {
   id: string;
@@ -56,6 +58,7 @@ export type DriveReport = {
   id: string;
   driveId: string;
   reportId: string;
+  report?: Report;
 };
 
 export type Vote = {
