@@ -74,10 +74,84 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ## **Workflow Overview**
 
-1. Report neglected area → attach image/video + description.
-2. Authority contact → assigned volunteer contacts official; status updated.
-3. Volunteer task assignment → based on comfort level (solo/low-social/group).
-4. Cleaning/beautification drives → scheduled via community votes.
-5. Track impact → before/after visuals, trees planted, recyclables processed.
+### 1. Report Submission
+
+- A **citizen** submits a report about a neglected area.
+- Report enters **Pending** status.
+
+### 2. Pending Escalation
+
+- If a report remains **Pending** for more than **7 days** without response →
+  it becomes **eligible for authority contact**.
+
+### 3. Authority Contact
+
+- A **volunteer** contacts the relevant authority.
+- Report status changes to **AUTHORITY_CONTACTED**.
+
+### 4. Authority Escalation
+
+- If the report remains in **AUTHORITY_CONTACTED** for more than **7 days** with no response →
+  it becomes **eligible for a Drive**.
+
+### 5. Community Voting
+
+- Multiple eligible reports are displayed.
+- The **community votes** on which reports to prioritize.
+- Voting considers:
+
+  - **Number of votes**
+  - **Feasibility (availability of people, timing, etc.)**
+
+### 6. Drive Organization
+
+- **Top-voted reports** are scheduled for Drives.
+- Each **Drive** is linked to one or more Reports.
+- A Drive includes:
+
+  - **Votes & Selection logic** (driven by community decision)
+  - **Date & Time scheduling**
+  - **Assigned Tasks** (matched by comfort & availability)
+
+### 7. Task Execution
+
+- Volunteers and community members carry out the planned Drive.
+- Drives may extend over **days or even months**, depending on the scale.
+- Flexibility is maintained — timelines are **community-driven**, not rigid.
+
+### 8. Beautification & Sustained Care
+
+- After a Drive is completed:
+
+  - **Beautification efforts** (e.g., planting trees, painting walls, adding greenery, artwork).
+  - **Preventive measures** (ensuring the area remains respected and not neglected again).
+
+    - Example: signage, community awareness, decorations, or installing basic amenities.
+
+  - **Monitoring period (≈1 month)** where volunteers check back to ensure upkeep.
+
+- Goal: shift perception of the place so people value it and avoid littering/neglect.
+
+---
+
+## Cron Jobs
+
+Daily check for escalation:
+
+Move reports from Pending → Eligible for Authority Contact (if > 7 days).
+
+Move reports from Authority Contacted → Eligible for Drive (if > 7 days).
+
+Weekly voting aggregation (optional): finalizes votes and selects reports for Drives.
+
+Drive reminders (optional): notify volunteers before scheduled Drives.
+
+Post-Drive monitoring (active for 1 month):
+
+Runs every 7 days after a Drive.
+
+Sends reminders to volunteers to check the site and log updates.
+
+Automatically ends after the 1-month monitoring period.
 
 ---

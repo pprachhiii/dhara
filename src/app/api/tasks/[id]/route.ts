@@ -1,45 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
+import { TaskStatus, SocializingLevel } from "@prisma/client";
 
-// GET: Get a single task by ID
-export async function GET(
-  req: NextRequest,
-  context: Context
-) {
-  const { id } = await context.params;
-  const task = await prisma.task.findUnique({ where: { id } });
-  if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(task);
-}
-
-// PATCH: Update a task by ID
-export async function PATCH(
-  req: NextRequest,
-  context: Context
-) {
-  const { id } = await context.params;
-  const data = await req.json();
-
+// GET /api/tasks/:id
+export async function GET(request: NextRequest, context: Context) {
   try {
-    const task = await prisma.task.update({ where: { id }, data });
+    const { id } = await context.params;
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: {
+        report: true,
+        drive: true,
+        volunteer: true,
+      },
+    });
+
+    if (!task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
     return NextResponse.json(task);
-  } catch {
-    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  } catch (err) {
+    console.error("Error fetching task:", err);
+    return NextResponse.json({ error: "Failed to fetch task" }, { status: 500 });
   }
 }
 
-// DELETE: Delete a task by ID
-export async function DELETE(
-  req: NextRequest,
-  context: Context
-) {
-  const { id } = await context.params;
-
+// PATCH /api/tasks/:id
+export async function PATCH(request: NextRequest, context: Context) {
   try {
+    const { id } = await context.params;
+    const data = await request.json();
+
+    const updatedTask = await prisma.task.update({
+      where: { id },
+      data: {
+        volunteerId: data.volunteerId ?? undefined,
+        comfort: data.comfort
+          ? (data.comfort as SocializingLevel)
+          : undefined,
+        timeSlot: data.timeSlot ? new Date(data.timeSlot) : undefined,
+        status: data.status
+          ? (data.status as TaskStatus)
+          : undefined,
+      },
+      include: {
+        report: true,
+        drive: true,
+        volunteer: true,
+      },
+    });
+
+    return NextResponse.json({
+      message: "Task updated successfully",
+      task: updatedTask,
+    });
+  } catch (err) {
+    console.error("Error updating task:", err);
+    return NextResponse.json({ error: "Task not found or update failed" }, { status: 404 });
+  }
+}
+
+// DELETE /api/tasks/:id
+export async function DELETE(request: NextRequest, context: Context) {
+  try {
+    const { id } = await context.params;
     await prisma.task.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch {
+    return NextResponse.json({ message: "Task deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting task:", err);
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 }

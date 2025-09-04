@@ -1,30 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { TaskStatus, SocializingLevel, AuthorityType } from "@/lib/types";
+import {
+  TaskStatus,
+  SocializingLevel,
+  AuthorityType,
+  ReportStatus,
+  DriveStatus,
+} from "@/lib/types";
 
 type ModelType = "Report" | "Task" | "Drive" | "Authority";
-
-// Generic FormState
 type FormState = Record<string, string | number | undefined>;
 
 interface CreateFormProps {
   model: ModelType;
+  initialValues?: FormState;
+  disableFields?: string[];
+  onClose?: () => void;
+  onSuccess?: () => void;
 }
 
-// Runtime arrays for selects
-const SOCIALIZING_LEVELS: SocializingLevel[] = ["SOLO", "DUAL", "GROUP"];
-const TASK_STATUSES: TaskStatus[] = ["OPEN", "ASSIGNED", "DONE"];
-const AUTHORITY_TYPES: AuthorityType[] = ["GOVERNMENT", "NGO", "OTHERS"];
+const SOCIALIZING_LEVELS = Object.values(SocializingLevel);
+const TASK_STATUSES = Object.values(TaskStatus);
+const AUTHORITY_TYPES = Object.values(AuthorityType);
+const REPORT_STATUSES = Object.values(ReportStatus);
+const DRIVE_STATUSES = Object.values(DriveStatus);
 
-export default function CreateForm({ model }: CreateFormProps) {
+export default function CreateForm({
+  model,
+  initialValues,
+  disableFields = [],
+  onClose,
+  onSuccess,
+}: CreateFormProps) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>({});
+  const [form, setForm] = useState<FormState>(initialValues || {});
+
+  // Sync form with initialValues when editing
+  useEffect(() => {
+    if (initialValues) setForm(initialValues);
+  }, [initialValues]);
 
   const getFields = () => {
     switch (model) {
@@ -34,20 +54,25 @@ export default function CreateForm({ model }: CreateFormProps) {
           { name: "title", label: "Title", type: "text" },
           { name: "description", label: "Description", type: "textarea" },
           { name: "imageUrl", label: "Image URL", type: "text" },
+          { name: "status", label: "Status", type: "select", options: REPORT_STATUSES },
         ];
       case "Task":
         return [
           { name: "reportId", label: "Report ID", type: "text" },
+          { name: "driveId", label: "Drive ID", type: "text" },
+          { name: "volunteerId", label: "Assigned To (Volunteer ID)", type: "text" },
           { name: "comfort", label: "Comfort Level", type: "select", options: SOCIALIZING_LEVELS },
-          { name: "assignedTo", label: "Assigned To", type: "text" },
           { name: "status", label: "Status", type: "select", options: TASK_STATUSES },
+          { name: "timeSlot", label: "Time Slot", type: "text" },
         ];
       case "Drive":
         return [
-          { name: "participant", label: "Participant Count", type: "number" },
-          { name: "date", label: "Date", type: "date" },
           { name: "title", label: "Title", type: "text" },
           { name: "description", label: "Description", type: "textarea" },
+          { name: "participant", label: "Participant Count", type: "number" },
+          { name: "startDate", label: "Start Date", type: "date" },
+          { name: "endDate", label: "End Date", type: "date" },
+          { name: "status", label: "Status", type: "select", options: DRIVE_STATUSES },
         ];
       case "Authority":
         return [
@@ -58,6 +83,7 @@ export default function CreateForm({ model }: CreateFormProps) {
           { name: "email", label: "Email", type: "text" },
           { name: "phone", label: "Phone", type: "text" },
           { name: "website", label: "Website", type: "text" },
+          { name: "active", label: "Active", type: "select", options: ["true", "false"] },
         ];
       default:
         return [];
@@ -71,32 +97,33 @@ export default function CreateForm({ model }: CreateFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // map each model to its correct API endpoint
+    const isEdit = !!initialValues && !!initialValues.id;
     const endpointMap: Record<ModelType, string> = {
-      Report: "/api/reports",
-      Task: "/api/tasks",
-      Drive: "/api/drives",
-      Authority: "/api/authority", // singular!
+      Report: isEdit ? `/api/reports/${initialValues?.id}` : "/api/reports",
+      Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
+      Drive: isEdit ? `/api/drives/${initialValues?.id}` : "/api/drives",
+      Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
     };
 
     try {
       const res = await fetch(endpointMap[model], {
-        method: "POST",
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        console.error("Failed response:", err);
         throw new Error(err.error || "Request failed");
       }
 
-      toast.success(`${model} created successfully!`);
-      router.push(`/${model.toLowerCase()}`);
+      toast.success(`${model} ${isEdit ? "updated" : "created"} successfully!`);
+      onSuccess?.();
+      onClose?.();
+      if (!isEdit) router.push(`/${model.toLowerCase()}`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create");
+      toast.error(`Failed to ${isEdit ? "update" : "create"} ${model}`);
     }
   };
 
@@ -107,9 +134,12 @@ export default function CreateForm({ model }: CreateFormProps) {
       onSubmit={handleSubmit}
       className="space-y-4 bg-white p-6 rounded-xl shadow max-w-md mx-auto mt-6"
     >
-      <h1 className="text-2xl font-bold mb-4">Create {model}</h1>
+      <h1 className="text-2xl font-bold mb-4">
+        {initialValues ? `Edit ${model}` : `Create ${model}`}
+      </h1>
+
       {fields.map((field) => {
-        const value = form[field.name] || "";
+        const value = form[field.name] ?? "";
 
         if (field.type === "textarea") {
           return (
@@ -118,6 +148,7 @@ export default function CreateForm({ model }: CreateFormProps) {
               placeholder={field.label}
               value={value as string}
               onChange={(e) => handleChange(field.name, e.target.value)}
+              disabled={disableFields.includes(field.name)}
             />
           );
         }
@@ -129,6 +160,7 @@ export default function CreateForm({ model }: CreateFormProps) {
               value={value as string}
               onChange={(e) => handleChange(field.name, e.target.value)}
               className="border p-2 rounded w-full"
+              disabled={disableFields.includes(field.name)}
             >
               <option value="">Select {field.label}</option>
               {field.options?.map((opt) => (
@@ -146,6 +178,7 @@ export default function CreateForm({ model }: CreateFormProps) {
             type={field.type}
             placeholder={field.label}
             value={value}
+            disabled={disableFields.includes(field.name)}
             onChange={(e) =>
               handleChange(
                 field.name,
@@ -155,9 +188,22 @@ export default function CreateForm({ model }: CreateFormProps) {
           />
         );
       })}
-      <Button type="submit" className="w-full mt-2">
-        Submit {model}
-      </Button>
+
+      <div className="flex gap-2 mt-2">
+        <Button type="submit" className="flex-1">
+          {initialValues ? "Update" : "Submit"} {model}
+        </Button>
+        {onClose && (
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

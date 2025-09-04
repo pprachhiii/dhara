@@ -14,30 +14,96 @@ model Report {
   description       String
   imageUrl          String?
   status            ReportStatus       @default(PENDING)
+  eligibleAt        DateTime?          // when it became eligible for escalation
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
   tasks             Task[]
   reportAuthorities ReportAuthority[]
+  drives            DriveReport[]
+  votes             ReportVote[]
+  monitorings       Monitoring[]
+}
+
+model ReportVote {
+  id        String   @id @default(cuid())
+  userId    String
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Task {
   id         String           @id @default(cuid())
   reportId   String
   report     Report           @relation(fields: [reportId], references: [id])
+
+  driveId    String?          
+  drive      Drive?           @relation(fields: [driveId], references: [id])
+
+  volunteerId String?
+  volunteer   Volunteer?      @relation(fields: [volunteerId], references: [id])
+
   comfort    SocializingLevel
-  assignedTo String?
+  timeSlot   DateTime?        
   status     TaskStatus       @default(OPEN)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
 }
 
 model Drive {
-  id          String    @id @default(cuid())
-  participant Int
-  date        DateTime
+  id          String        @id @default(cuid())
   title       String
   description String?
-  createdAt   DateTime  @default(now())
+  participant Int
+  startDate   DateTime
+  endDate     DateTime?
+  status      DriveStatus   @default(PLANNED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  reports     DriveReport[]
+  votes       Vote[]
+  tasks       Task[]
+  beautify    Beautification[]
+  monitorings Monitoring[]
+}
+
+model DriveReport {
+  id        String   @id @default(cuid())
+  driveId   String
+  drive     Drive    @relation(fields: [driveId], references: [id])
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  driveId   String
+  drive     Drive    @relation(fields: [driveId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Beautification {
+  id          String       @id @default(cuid())
+  driveId     String
+  drive       Drive        @relation(fields: [driveId], references: [id])
+  type        BeautifyType
+  description String?
+  createdAt   DateTime     @default(now())
+}
+
+model Monitoring {
+  id          String             @id @default(cuid())
+  driveId     String?
+  drive       Drive?             @relation(fields: [driveId], references: [id])
+  reportId    String?
+  report      Report?            @relation(fields: [reportId], references: [id])
+  status      MonitoringStatus   @default(ACTIVE)
+  checkDate   DateTime
+  notes       String?
+  createdAt   DateTime           @default(now())
 }
 
 model Authority {
@@ -45,12 +111,12 @@ model Authority {
   name              String
   type              AuthorityType
   city              String
-  region            String?            // optional: ward / neighborhood
+  region            String?
   email             String?
   phone             String?
   website           String?
-  active            Boolean            @default(false) // starts as FALSE, verified later
-  submittedBy       String?            // optional: user who submitted
+  active            Boolean            @default(false)
+  submittedBy       String?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   reportAuthorities ReportAuthority[]
@@ -58,20 +124,31 @@ model Authority {
 
 model ReportAuthority {
   id          String        @id @default(cuid())
-  report      Report        @relation(fields: [reportId], references: [id])
   reportId    String
-  authority   Authority     @relation(fields: [authorityId], references: [id])
+  report      Report        @relation(fields: [reportId], references: [id])
   authorityId String
-  volunteer   String?       // who contacted
+  authority   Authority     @relation(fields: [authorityId], references: [id])
+  volunteer   String?
   status      ContactStatus @default(PENDING)
   contactedAt DateTime?
   createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  updatedAt   DateTime      @default(now())
+}
+
+model Volunteer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?
+  tasks     Task[]
+  joinedAt  DateTime @default(now())
 }
 
 enum ReportStatus {
   PENDING
+  ELIGIBLE_AUTHORITY
   AUTHORITY_CONTACTED
+  ELIGIBLE_DRIVE
   IN_PROGRESS
   RESOLVED
 }
@@ -80,6 +157,12 @@ enum TaskStatus {
   OPEN
   ASSIGNED
   DONE
+}
+
+enum DriveStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
 }
 
 enum SocializingLevel {
@@ -99,4 +182,18 @@ enum ContactStatus {
   CONTACTED
   RESPONDED
   NO_RESPONSE
+}
+
+enum BeautifyType {
+  TREE_PLANTING
+  WALL_PAINTING
+  SIGNAGE
+  CLEANUP
+  OTHER
+}
+
+enum MonitoringStatus {
+  ACTIVE
+  COMPLETED
+  ESCALATED
 }

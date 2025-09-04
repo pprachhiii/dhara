@@ -18,23 +18,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Authority, AuthorityType, ReportAuthority, Report } from "@/lib/types";
+import toast from "react-hot-toast";
 
-interface Authority {
-  id: string;
-  name: string;
-  type: string;
-  city: string;
-  region: string | null;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-}
+// Define detailed authority type for modal
+type AuthorityDetail = Authority & {
+  reportAuthorities?: (ReportAuthority & { report: Report })[];
+};
 
 export default function AuthoritiesPage() {
   const [authorities, setAuthorities] = useState<Authority[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedAuthority, setSelectedAuthority] = useState<AuthorityDetail | null>(null);
 
-  // filters
+  // Filters
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
@@ -50,19 +47,18 @@ export default function AuthoritiesPage() {
       if (region) params.append("region", region);
       if (type) params.append("type", type);
 
-      const url = `/api/authority?${params.toString()}`;
-
       try {
-        const res = await fetch(url, { cache: "no-store" });
+        const res = await fetch(`/api/authority?${params.toString()}`, { cache: "no-store" });
         const data = await res.json();
-
         if (!Array.isArray(data)) {
           console.warn("API did not return an array!", data);
+          setAuthorities([]);
+        } else {
+          setAuthorities(data);
         }
-
-        setAuthorities(data);
       } catch (err) {
         console.error("Error fetching authorities:", err);
+        toast.error("Failed to fetch authorities");
       } finally {
         setLoading(false);
       }
@@ -70,6 +66,20 @@ export default function AuthoritiesPage() {
 
     fetchAuthorities();
   }, [search, city, region, type]);
+
+  const openAuthority = async (id: string) => {
+    try {
+      const res = await fetch(`/api/authority/${id}`);
+      if (!res.ok) throw new Error("Authority not found");
+      const data: AuthorityDetail = await res.json();
+      setSelectedAuthority(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load authority details");
+    }
+  };
+
+  const closeModal = () => setSelectedAuthority(null);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -83,32 +93,28 @@ export default function AuthoritiesPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="w-64"
         />
-
         <Input
           placeholder="Filter by city"
           value={city}
           onChange={(e) => setCity(e.target.value)}
           className="w-40"
         />
-
         <Input
           placeholder="Filter by region"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           className="w-40"
         />
-
         <Select value={type} onValueChange={(val) => setType(val)}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="GOVERNMENT">Government</SelectItem>
-            <SelectItem value="NGO">NGO</SelectItem>
-            <SelectItem value="OTHERS">Others</SelectItem>
+            <SelectItem value={AuthorityType.GOVERNMENT}>Government</SelectItem>
+            <SelectItem value={AuthorityType.NGO}>NGO</SelectItem>
+            <SelectItem value={AuthorityType.OTHERS}>Others</SelectItem>
           </SelectContent>
         </Select>
-
         <Button
           variant="outline"
           onClick={() => {
@@ -143,7 +149,11 @@ export default function AuthoritiesPage() {
             </TableHeader>
             <TableBody>
               {authorities.map((auth) => (
-                <TableRow key={auth.id}>
+                <TableRow
+                  key={auth.id}
+                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => openAuthority(auth.id)}
+                >
                   <TableCell className="font-medium">{auth.name}</TableCell>
                   <TableCell>{auth.type}</TableCell>
                   <TableCell>{auth.city}</TableCell>
@@ -157,6 +167,7 @@ export default function AuthoritiesPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="text-blue-600 underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         Visit
                       </a>
@@ -168,6 +179,58 @@ export default function AuthoritiesPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
+      )}
+
+      {/* Modal */}
+      {selectedAuthority && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
+              onClick={closeModal}
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold mb-2">{selectedAuthority.name}</h2>
+            <p className="text-sm text-gray-500 mb-4">{selectedAuthority.type}</p>
+            <p className="mb-1"><strong>City:</strong> {selectedAuthority.city}</p>
+            <p className="mb-1"><strong>Region:</strong> {selectedAuthority.region ?? "-"}</p>
+            <p className="mb-1"><strong>Email:</strong> {selectedAuthority.email ?? "-"}</p>
+            <p className="mb-1"><strong>Phone:</strong> {selectedAuthority.phone ?? "-"}</p>
+            <p className="mb-4">
+              <strong>Website:</strong>{" "}
+              {selectedAuthority.website ? (
+                <a
+                  href={selectedAuthority.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 underline"
+                >
+                  Visit
+                </a>
+              ) : (
+                "-"
+              )}
+            </p>
+
+            {/* Related Reports */}
+            {selectedAuthority.reportAuthorities?.length ? (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2">Related Reports</h3>
+                <ul className="list-disc list-inside text-sm">
+                  {selectedAuthority.reportAuthorities.map(
+                    (ra: ReportAuthority & { report: Report }) => (
+                      <li key={ra.id}>
+                        {ra.report.title} — Status: {ra.report.status}
+                      </li>
+                    )
+                  )}
+                </ul>
+              </div>
+            ) : null}
+
+          </div>
         </div>
       )}
     </div>
