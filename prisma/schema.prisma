@@ -18,10 +18,15 @@ model Report {
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
+  votingOpenAt      DateTime?
+  votingCloseAt     DateTime?
+  finalVoteCount    Int?
+
   tasks             Task[]
   reportAuthorities ReportAuthority[]
   drives            DriveReport[]
   votes             ReportVote[]
+  discussions       ReportDiscussion[]
   monitorings       Monitoring[]
 }
 
@@ -31,39 +36,55 @@ model ReportVote {
   reportId  String
   report    Report   @relation(fields: [reportId], references: [id])
   createdAt DateTime @default(now())
+
+  @@unique([userId, reportId]) 
+}
+
+model ReportDiscussion {
+  id        String   @id @default(cuid())
+  reportId  String
+  report    Report   @relation(fields: [reportId], references: [id])
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
 }
 
 model Task {
-  id         String           @id @default(cuid())
-  reportId   String
-  report     Report           @relation(fields: [reportId], references: [id])
+  id          String           @id @default(cuid())
+  reportId    String
+  report      Report           @relation(fields: [reportId], references: [id])
 
-  driveId    String?          
-  drive      Drive?           @relation(fields: [driveId], references: [id])
+  driveId     String?
+  drive       Drive?           @relation(fields: [driveId], references: [id])
 
   volunteerId String?
-  volunteer   Volunteer?      @relation(fields: [volunteerId], references: [id])
+  volunteer   Volunteer?       @relation(fields: [volunteerId], references: [id])
 
-  comfort    SocializingLevel
-  timeSlot   DateTime?        
-  status     TaskStatus       @default(OPEN)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  comfort     SocializingLevel
+  timeSlot    DateTime?
+  status      TaskStatus       @default(OPEN)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }
 
 model Drive {
-  id          String        @id @default(cuid())
+  id          String           @id @default(cuid())
   title       String
   description String?
   participant Int
   startDate   DateTime
   endDate     DateTime?
-  status      DriveStatus   @default(PLANNED)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  status      DriveStatus      @default(PLANNED)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  votingOpenAt   DateTime?
+  votingCloseAt  DateTime?
+  finalVoteCount Int?
 
   reports     DriveReport[]
-  votes       Vote[]
+  votes       DriveVote[]
+  discussions DriveDiscussion[]
   tasks       Task[]
   beautify    Beautification[]
   monitorings Monitoring[]
@@ -77,11 +98,22 @@ model DriveReport {
   report    Report   @relation(fields: [reportId], references: [id])
 }
 
-model Vote {
+model DriveVote {
   id        String   @id @default(cuid())
   userId    String
   driveId   String
   drive     Drive    @relation(fields: [driveId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, driveId]) 
+}
+
+model DriveDiscussion {
+  id        String   @id @default(cuid())
+  driveId   String
+  drive     Drive    @relation(fields: [driveId], references: [id])
+  userId    String
+  content   String
   createdAt DateTime @default(now())
 }
 
@@ -128,7 +160,7 @@ model ReportAuthority {
   report      Report        @relation(fields: [reportId], references: [id])
   authorityId String
   authority   Authority     @relation(fields: [authorityId], references: [id])
-  volunteer   String?
+  volunteerId String?       // who logged the contact
   status      ContactStatus @default(PENDING)
   contactedAt DateTime?
   createdAt   DateTime      @default(now())
@@ -149,6 +181,7 @@ enum ReportStatus {
   ELIGIBLE_AUTHORITY
   AUTHORITY_CONTACTED
   ELIGIBLE_DRIVE
+  VOTING_FINALIZED   
   IN_PROGRESS
   RESOLVED
 }
@@ -161,6 +194,7 @@ enum TaskStatus {
 
 enum DriveStatus {
   PLANNED
+  VOTING_FINALIZED   
   ONGOING
   COMPLETED
 }

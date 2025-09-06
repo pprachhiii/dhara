@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       },
       votes: true,
       monitorings: true,
+      _count: { select: { votes: true } }, 
     },
   });
 
@@ -58,11 +59,16 @@ export async function GET(request: NextRequest) {
       escalationType = "CREATE_DRIVE";
     }
 
-    return { ...report, escalationType };
+    return { 
+      ...report, 
+      escalationType, 
+      voteCount: report._count.votes, 
+    };
   });
 
   return NextResponse.json(enrichedReports);
 }
+
 
 export async function POST(request: NextRequest) {
   const data = await request.json();

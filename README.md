@@ -55,14 +55,6 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ---
 
-## **Hackathon / MVP Scope**
-
-- Fully implemented: reporting areas, authority contact simulation, task assignment based on comfort, status tracking, basic UI to show lists and progress.
-- Simulated / demo-only: real emails/notifications to authorities, waiting for actual response, full analytics dashboards.
-- Future expansion: automated authority notifications, AI-based task recommendations, real-world cleanup scheduling, real-time impact dashboards.
-
----
-
 ## **Tech Stack**
 
 - **Frontend:** Next.js + ShadCN/UI + Tailwind CSS
@@ -72,86 +64,156 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ---
 
-## **Workflow Overview**
+# Useflow
 
-### 1. Report Submission
+## **1. Report Phase (Citizen → System)**
 
-- A **citizen** submits a report about a neglected area.
-- Report enters **Pending** status.
+- Citizen submits report (photo/video + description).
+- Status: **Pending**.
 
-### 2. Pending Escalation
+⏳ After 7 days → **Eligible for Authority Contact**.
 
-- If a report remains **Pending** for more than **7 days** without response →
-  it becomes **eligible for authority contact**.
+---
 
-### 3. Authority Contact
+## **2. Authority Contact Phase (Volunteer → Authority)**
 
-- A **volunteer** contacts the relevant authority.
-- Report status changes to **AUTHORITY_CONTACTED**.
+- Report shows **Contact Official button** (with authority details like phone/email).
+- When clicked → popup: _“Did you contact the official?”_ → volunteer confirms, system logs **name + date**.
+- Status → **Authority Contacted**.
 
-### 4. Authority Escalation
+⏳ After 7 more days:
 
-- If the report remains in **AUTHORITY_CONTACTED** for more than **7 days** with no response →
-  it becomes **eligible for a Drive**.
+- ✅ Authority responded → Status: **Resolved by Authority** → jump to Beautification/Monitoring.
+- ❌ No response → Status: **Eligible for Drive**.
 
-### 5. Community Voting
+---
 
-- Multiple eligible reports are displayed.
-- The **community votes** on which reports to prioritize.
-- Voting considers:
+## **3. Community Voting Phase (Reports) (Community → System)**
 
-  - **Number of votes**
-  - **Feasibility (availability of people, timing, etc.)**
+- Reports that are **Eligible for Drive** appear in the **report voting list**.
+- Community members can:
 
-### 6. Drive Organization
+  - **Vote** on which reports deserve action first.
+  - **Add a short discussion comment** (ideas, suggestions, reasons for supporting, availability notes).
 
-- **Top-voted reports** are scheduled for Drives.
-- Each **Drive** is linked to one or more Reports.
-- A Drive includes:
+**Voting Window:**
 
-  - **Votes & Selection logic** (driven by community decision)
-  - **Date & Time scheduling**
-  - **Assigned Tasks** (matched by comfort & availability)
+- Starts immediately when report becomes **Eligible for Drive**.
+- Open for **7 days**.
+- `votingOpenAt` = now, `votingCloseAt` = now + 7 days.
 
-### 7. Task Execution
+**When Voting Ends:**
 
-- Volunteers and community members carry out the planned Drive.
-- Drives may extend over **days or even months**, depending on the scale.
-- Flexibility is maintained — timelines are **community-driven**, not rigid.
+- Votes are frozen.
+- Reports with enough community support move to **In Progress**.
+- Status: **In Progress (Drive Scheduling can begin)**.
 
-### 8. Beautification & Sustained Care
+---
 
-- After a Drive is completed:
+## **4. Drive Creation & Voting Phase (Community → System)**
 
-  - **Beautification efforts** (e.g., planting trees, painting walls, adding greenery, artwork).
-  - **Preventive measures** (ensuring the area remains respected and not neglected again).
+- Once a report is **In Progress**, community members can **propose specific Drives**.
+- One report → may have **multiple Drives** (phased cleanups or recurring efforts).
 
-    - Example: signage, community awareness, decorations, or installing basic amenities.
+Each **proposed Drive** includes:
 
-  - **Monitoring period (≈1 month)** where volunteers check back to ensure upkeep.
+- Report(s) linked
+- Tentative Date & Time (community-chosen)
+- Task assignments (solo / low-social / group, based on volunteer comfort & availability)
+- **Drive-specific discussion space** for coordination (_“I can bring gloves”_, _“Let’s meet at the north gate”_).
 
-- Goal: shift perception of the place so people value it and avoid littering/neglect.
+**Drive Voting Window:**
+
+- Opens immediately when a Drive is proposed.
+- Open for **7 days**.
+- `votingOpenAt` = now, `votingCloseAt` = now + 7 days.
+
+**When Voting Ends:**
+
+- Votes are frozen.
+- Drive with highest support is **finalized** (status: **Planned → Voting Finalized → Ongoing**).
+- Volunteers notified to prepare.
+
+---
+
+## **5. Action & Care Phase (Volunteers → Area)**
+
+- Drive executed → before/after pics, collected waste, trees planted, etc.
+- Status: **Drive Completed (linked to report)**.
+
+🔁 Since **multiple Drives can attach to one report**:
+
+- Report stays **Open** until the community marks it “done.”
+- Closure happens only after the last Drive + monitoring.
+
+---
+
+## **6. Beautification & Monitoring Phase**
+
+- After Drives:
+
+  - Beautification (murals, trees, signage).
+  - Monitoring for \~1 month (weekly check-ins logged).
+
+- ✅ If clean → Status: **Sustained**.
+
+- ❌ If dirty again → loop back to **Report Phase**.
+
+---
+
+# **Visual Lifecycle (with Discussions & Voting)**
+
+1. **Report (Pending)** →
+
+2. **Authority Contact Eligible** →
+
+   - Volunteer logs contact → **Authority Contacted**
+   - ✅ Authority resolves → **Resolved by Authority**
+   - ❌ No response → **Eligible for Drive**
+
+3. **Report Voting (7 days)** → report finalized → Status: **In Progress**
+
+4. **Drive Proposals + Drive Voting (7 days each)** → finalized into **Drive(s)**
+
+   - One report → many Drives
+   - Each drive has its own voting + discussion cycle
+
+5. **Drives Executed → Beautification → Monitoring (1 month)** →
+
+   - ✅ Sustained OR
+   - 🔁 Back to Report
+
+---
+
+# **Where Discussions Fit in**
+
+- **At Report Voting** → people explain _why_ a site deserves action.
+- **At Drive Voting/Setup** → volunteers coordinate practicals (time, materials, roles).
+- Keeps it transparent + collaborative, but still structured.
 
 ---
 
 ## Cron Jobs
 
-Daily check for escalation:
+**Daily checks:**
 
-Move reports from Pending → Eligible for Authority Contact (if > 7 days).
+- Move reports from Pending → Eligible for Authority Contact (if > 7 days).
+- Move reports from Authority Contacted → Eligible for Drive (if > 7 days).
+- Close report voting when `votingCloseAt < now()`.
+- Close drive voting when `votingCloseAt < now()`.
 
-Move reports from Authority Contacted → Eligible for Drive (if > 7 days).
+**Weekly aggregation (optional):**
 
-Weekly voting aggregation (optional): finalizes votes and selects reports for Drives.
+- Summarize report votes + finalize priorities.
 
-Drive reminders (optional): notify volunteers before scheduled Drives.
+**Drive reminders (optional):**
 
-Post-Drive monitoring (active for 1 month):
+- Notify volunteers before scheduled Drives.
 
-Runs every 7 days after a Drive.
+**Post-Drive monitoring (1 month):**
 
-Sends reminders to volunteers to check the site and log updates.
-
-Automatically ends after the 1-month monitoring period.
+- Runs every 7 days after a Drive.
+- Sends reminders to volunteers to log updates.
+- Automatically ends after 1-month monitoring.
 
 ---
