@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ReportStatus } from "@prisma/client";
 import { subDays } from "date-fns";
+import { requireAuth } from "@/lib/serverAuth";
 
+// GET /api/reports (public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const statusParam = url.searchParams.get("status");
   const search = url.searchParams.get("search");
 
-  // Validate ReportStatus
   const status =
     statusParam && Object.values(ReportStatus).includes(statusParam as ReportStatus)
       ? (statusParam as ReportStatus)
@@ -28,12 +29,8 @@ export async function GET(request: NextRequest) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      reportAuthorities: {
-        include: { authority: true },
-      },
-      drives: {
-        include: { drive: true },
-      },
+      reportAuthorities: { include: { authority: true } },
+      drives: { include: { drive: true } },
       votes: true,
       monitorings: true,
       _count: { select: { votes: true } },
@@ -45,7 +42,6 @@ export async function GET(request: NextRequest) {
   const enrichedReports = reports.map((report) => {
     let escalationType: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null = null;
 
-    // Contact Authority visible immediately if status is PENDING or ELIGIBLE_AUTHORITY
     if (
       report.status === ReportStatus.PENDING ||
       report.status === ReportStatus.ELIGIBLE_AUTHORITY
@@ -53,7 +49,6 @@ export async function GET(request: NextRequest) {
       escalationType = "CONTACT_AUTHORITY";
     }
 
-    // Escalation: Authority Contacted → Eligible for Drive (only after 7+ days)
     if (
       report.status === ReportStatus.AUTHORITY_CONTACTED &&
       report.updatedAt <= sevenDaysAgo
@@ -71,17 +66,23 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(enrichedReports);
 }
 
+// POST /api/reports (protected)
 export async function POST(request: NextRequest) {
+  const { error, response, session } = await requireAuth(request);
+  if (error || !session) return response;
+
   const data = await request.json();
+
   const newReport = await prisma.report.create({
     data: {
-      reporter: data.reporter,
+      reporterId: session.user.id, // safe now
       title: data.title,
       description: data.description,
       imageUrl: data.imageUrl,
       status: ReportStatus.PENDING,
-      eligibleAt: new Date(), // start tracking from creation
+      eligibleAt: new Date(),
     },
   });
+
   return NextResponse.json(newReport);
 }

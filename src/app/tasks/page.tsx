@@ -129,13 +129,13 @@ export default function TasksPage() {
             {tasks.map((t) => (
               <tr key={t.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 border">{t.status}</td>
-                <td className="px-4 py-2 border">{t.comfort ?? "—"}</td>
+                <td className="px-4 py-2 border">{t.comfort ?? "-"}</td>
                 <td className="px-4 py-2 border">
-                  {t.timeSlot ? new Date(t.timeSlot).toLocaleString() : "—"}
+                  {t.timeSlot ? new Date(t.timeSlot).toLocaleString() : "-"}
                 </td>
-                <td className="px-4 py-2 border">{t.report?.title ?? "—"}</td>
-                <td className="px-4 py-2 border">{t.drive?.title ?? "—"}</td>
-                <td className="px-4 py-2 border">{t.volunteer?.name ?? "—"}</td>
+                <td className="px-4 py-2 border">{t.report?.title ?? "-"}</td>
+                <td className="px-4 py-2 border">{t.drive?.title ?? "-"}</td>
+                <td className="px-4 py-2 border">{t.volunteer?.name ?? "-"}</td>
                 <td className="px-4 py-2 border flex gap-2">
                   <Button size="sm" onClick={() => setSelectedTask(t)}>
                     See
@@ -173,16 +173,16 @@ export default function TasksPage() {
             </button>
             <h2 className="text-2xl font-bold mb-2">Task</h2>
             <p>Status: {selectedTask.status}</p>
-            <p>Comfort: {selectedTask.comfort ?? "—"}</p>
+            <p>Comfort: {selectedTask.comfort ?? "-"}</p>
             <p>
               Time Slot:{" "}
               {selectedTask.timeSlot
                 ? new Date(selectedTask.timeSlot).toLocaleString()
-                : "—"}
+                : "-"}
             </p>
-            <p>Report: {selectedTask.report?.title ?? "—"}</p>
-            <p>Drive: {selectedTask.drive?.title ?? "—"}</p>
-            <p>Volunteer: {selectedTask.volunteer?.name ?? "—"}</p>
+            <p>Report: {selectedTask.report?.title ?? "-"}</p>
+            <p>Drive: {selectedTask.drive?.title ?? "-"}</p>
+            <p>Volunteer: {selectedTask.volunteer?.name ?? "-"}</p>
 
             <div className="mt-6 flex justify-end gap-2">
               <Button

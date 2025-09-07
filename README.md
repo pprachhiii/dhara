@@ -2,7 +2,9 @@
 
 **Community-driven platform for environmental stewardship and civic responsibility in India**
 
-DHARA empowers citizens of all ages-students, professionals, homemakers, children, and the elderly-to participate in cleaning, beautifying, and maintaining neighborhoods according to their availability, comfort, and mental well-being. It combines **reporting neglected areas**, **coordinated volunteer action**, **authority contact tracking**, and **mental-health-aware task assignment** to create a practical, inclusive, and accountable environmental movement.
+DHARA empowers citizens of all ages-students, professionals, homemakers, children, and the elderly-to actively participate in cleaning, beautifying, and maintaining neighborhoods. Participation is flexible and aligned with people’s availability, comfort, and mental well-being.
+
+The platform integrates **reporting neglected areas**, **coordinated volunteer action**, **authority contact tracking**, and **mental-health-aware task assignment** into a practical, inclusive, and accountable environmental movement.
 
 ---
 
@@ -11,7 +13,7 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 ### 1. Report and Raise Awareness
 
 - Citizens can report **dirty or neglected areas** by uploading images, videos, and descriptions.
-- Each report is logged in the platform with a **unique status** (e.g., pending, authority contacted, community cleaning).
+- Each report is logged in the platform with a **unique status** (e.g., Pending, Authority Contacted, Community Cleaning).
 
 ### 2. Collaborate with Authorities
 
@@ -22,12 +24,12 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
   - **Contact Official** → logs contact and disables button if already contacted.
   - **Already Contacted** → shows the date/status of contact.
 
-- Follow-up reminders can be simulated or automated in future versions.
+- Follow-up reminders may be simulated or automated in future versions.
 
 ### 3. Inclusive Task Assignment
 
-- Volunteers can **choose their comfort level**: solo, low-social, or group tasks.
-- Tasks are assigned accordingly, ensuring **even introverted or mentally exhausted participants** can contribute meaningfully.
+- Volunteers select their **comfort level**: solo, low-social, or group tasks.
+- Assignments are made accordingly, ensuring even **introverted or mentally exhausted participants** can contribute meaningfully.
 
 ### 4. Organize and Participate in Drives
 
@@ -35,7 +37,13 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ### 5. Track Real Impact
 
-- Progress is monitored using **before-and-after visuals**, **trees planted**, and **recyclables processed**, fostering accountability and long-term engagement.
+- Progress tracked with:
+
+  - **Before-and-after visuals**
+  - **Trees planted**
+  - **Recyclables processed**
+
+- Fosters accountability and long-term engagement.
 
 ### 6. Sustainability and Aesthetics
 
@@ -46,12 +54,12 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 ## **Authority Contact Workflow**
 
 1. Citizen reports a neglected area.
-2. The system links the area to **relevant officials**.
+2. System links the area to **relevant officials**.
 3. Volunteers are **assigned to contact authorities**.
 4. Status updates:
 
-   - Authority responded → DHARA focuses on beautification.
-   - Authority didn’t respond → community volunteers clean and escalate complaints.
+   - ✅ Authority responded → DHARA focuses on beautification.
+   - ❌ Authority didn’t respond → community volunteers clean and escalate complaints.
 
 ---
 
@@ -59,12 +67,12 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 - **Frontend:** Next.js + ShadCN/UI + Tailwind CSS
 - **Backend:** Next.js API routes + Node.js
-- **Database:** PostgreSQL (with Prisma ORM)
-- **HTTP/API:** Axios or native fetch for frontend-backend communication
+- **Database:** PostgreSQL (via Prisma ORM)
+- **HTTP/API:** Axios or native fetch
 
 ---
 
-# UserFlow
+# **UserFlow**
 
 ## **1. Report Phase (Citizen → System)**
 
@@ -89,12 +97,12 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ## **3. Centralized Report Voting Phase (Community → System)**
 
-- **All reports that became Eligible for Drive** appear together in **one voting hub**.
-- **Community does not discuss per report** — instead, there’s an **overall voting discussion space** where people:
+- **All reports that became Eligible for Drive** appear together in a **single voting hub**.
+- **One central discussion thread** (not per report) for:
 
-  - Advocate for priority areas.
-  - Suggest why certain reports deserve earlier action.
-  - Flag constraints (e.g., accessibility, urgency, safety).
+  - Advocating priority areas.
+  - Explaining why certain reports deserve earlier action.
+  - Flagging constraints (safety, accessibility, urgency).
 
 **Voting Window:**
 
@@ -110,20 +118,17 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ## **4. Drive Creation & Centralized Drive Voting Phase**
 
-- Once reports are **In Progress**, volunteers propose **specific Drives** (cleanup, tree planting, phased actions).
+- Reports marked **In Progress** lead to volunteer-proposed **Drives** (cleanup, tree planting, phased actions).
+- Drives are listed in a **shared Drive Voting Hub** with:
 
-- **All proposed Drives are listed in a shared Drive Voting Hub**.
+  - Linked reports
+  - Proposed date/time
+  - Suggested task breakdown
 
-- Each Drive has:
+**Drive Discussion (centralized):**
 
-  - Linked reports.
-  - Proposed date/time.
-  - Suggested task breakdown.
-
-- **Discussion happens at the Drive Voting Hub level**:
-
-  - Coordination of logistics (_“I’ll bring gloves”_, _“North gate is better meeting point”_).
-  - General availability talks.
+- Logistics (_“I’ll bring gloves”_, _“North gate is better”_)
+- General availability
 
 **Voting Window:**
 
@@ -131,7 +136,7 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 **When Voting Ends:**
 
-- Highest-supported Drive(s) get **finalized** → status: **Planned → Ongoing**.
+- Highest-supported Drives are **finalized** → Status: **Planned → Ongoing**.
 - Volunteers notified.
 
 ---
@@ -139,14 +144,10 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 ## **5. Action & Care Phase**
 
 - Drive executed.
-
 - Evidence logged (before/after pics, collected waste, planted trees).
-
 - Status: **Drive Completed (linked back to reports)**.
-
-- Reports stay **Open** until the community marks them “done.”
-
-- Multiple Drives can attach to the same report.
+- Reports remain **Open** until marked “done” by the community.
+- Multiple Drives may attach to the same report.
 
 ---
 
@@ -159,37 +160,38 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 - ✅ If clean → **Sustained**.
 
-- ❌ If dirty again → cycle restarts at Report Phase.
+- ❌ If dirty again → cycle restarts at **Report Phase**.
 
 ---
 
 # **Where Discussions Happen (Centralized)**
 
-1. **Report Voting Hub** → one discussion thread for prioritization (not per report).
-2. **Drive Voting Hub** → one discussion thread for coordination (not per drive).
+1. **Report Voting Hub** → single discussion thread for prioritization.
+2. **Drive Voting Hub** → single discussion thread for coordination.
 
-👉 This keeps voting and talking **simple, transparent, and collective**.
+👉 Keeps voting and talking **simple, transparent, and collective**.
 
 ---
 
-## Cron Jobs (Adjusted for Centralization)
+## **Cron Jobs (Centralized Workflow)**
 
-- Daily:
+- **Daily**
 
-  - Move reports across phases (Pending → Eligible, etc.).
-  - Auto-close report voting after 7 days.
-  - Auto-close drive voting after 7 days.
+  - Move reports across phases (Pending → Eligible, etc.)
+  - Auto-close report voting after 7 days
+  - Auto-close drive voting after 7 days
 
-- Weekly:
+- **Weekly**
 
-  - Summarize report votes + finalize drive priorities.
+  - Summarize report votes
+  - Finalize drive priorities
 
-- Before Drives:
+- **Before Drives**
 
-  - Remind volunteers of upcoming drives.
+  - Remind volunteers of upcoming drives
 
-- After Drives:
+- **After Drives**
 
-  - Weekly monitoring reminders until 1 month ends.
+  - Weekly monitoring reminders until 1 month ends
 
 ---

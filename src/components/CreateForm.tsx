@@ -25,11 +25,27 @@ interface CreateFormProps {
   onSuccess?: () => void;
 }
 
-const SOCIALIZING_LEVELS = Object.values(SocializingLevel);
-const TASK_STATUSES = Object.values(TaskStatus);
-const AUTHORITY_TYPES = Object.values(AuthorityType);
-const REPORT_STATUSES = Object.values(ReportStatus);
-const DRIVE_STATUSES = Object.values(DriveStatus);
+// -------------------- Use literal arrays instead of types --------------------
+const SOCIALIZING_LEVELS: readonly SocializingLevel[] = ["SOLO", "DUAL", "GROUP"];
+const TASK_STATUSES: readonly TaskStatus[] = ["OPEN", "ASSIGNED", "DONE"];
+const AUTHORITY_TYPES: readonly AuthorityType[] = ["GOVERNMENT", "NGO", "OTHERS"];
+const REPORT_STATUSES: readonly ReportStatus[] = [
+  "PENDING",
+  "ELIGIBLE_AUTHORITY",
+  "AUTHORITY_CONTACTED",
+  "ELIGIBLE_DRIVE",
+  "VOTING_FINALIZED",
+  "IN_PROGRESS",
+  "RESOLVED",
+];
+const DRIVE_STATUSES: readonly DriveStatus[] = ["PLANNED", "VOTING_FINALIZED", "ONGOING", "COMPLETED"];
+
+interface Field {
+  name: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "datetime-local" | "select";
+  options?: readonly string[];
+}
 
 export default function CreateForm({
   model,
@@ -41,16 +57,15 @@ export default function CreateForm({
   const router = useRouter();
   const [form, setForm] = useState<FormState>(initialValues || {});
 
-  // Sync form with initialValues when editing
+  // Sync form when editing
   useEffect(() => {
     if (initialValues) setForm(initialValues);
   }, [initialValues]);
 
-  const getFields = () => {
+  const getFields = (): Field[] => {
     switch (model) {
       case "Report":
         return [
-          { name: "reporter", label: "Your Name", type: "text" },
           { name: "title", label: "Title", type: "text" },
           { name: "description", label: "Description", type: "textarea" },
           { name: "imageUrl", label: "Image URL", type: "text" },
@@ -60,18 +75,18 @@ export default function CreateForm({
         return [
           { name: "reportId", label: "Report ID", type: "text" },
           { name: "driveId", label: "Drive ID", type: "text" },
-          { name: "volunteerId", label: "Assigned To (Volunteer ID)", type: "text" },
+          { name: "volunteerId", label: "Volunteer ID", type: "text" },
           { name: "comfort", label: "Comfort Level", type: "select", options: SOCIALIZING_LEVELS },
           { name: "status", label: "Status", type: "select", options: TASK_STATUSES },
-          { name: "timeSlot", label: "Time Slot", type: "text" },
+          { name: "timeSlot", label: "Time Slot (DateTime)", type: "datetime-local" },
         ];
       case "Drive":
         return [
           { name: "title", label: "Title", type: "text" },
           { name: "description", label: "Description", type: "textarea" },
           { name: "participant", label: "Participant Count", type: "number" },
-          { name: "startDate", label: "Start Date", type: "date" },
-          { name: "endDate", label: "End Date", type: "date" },
+          { name: "startDate", label: "Start Date", type: "datetime-local" },
+          { name: "endDate", label: "End Date", type: "datetime-local" },
           { name: "status", label: "Status", type: "select", options: DRIVE_STATUSES },
         ];
       case "Authority":
@@ -97,7 +112,7 @@ export default function CreateForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isEdit = !!initialValues && !!initialValues.id;
+    const isEdit = !!initialValues?.id;
     const endpointMap: Record<ModelType, string> = {
       Report: isEdit ? `/api/reports/${initialValues?.id}` : "/api/reports",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",

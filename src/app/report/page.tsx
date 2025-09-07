@@ -1,341 +1,242 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ReportCard } from "@/components/ReportCard";
+import { useAppStore } from "@/lib/stores";
+import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
-import { Report, ReportStatus } from "@/lib/types";
-import toast from "react-hot-toast";
-import CreateForm from "@/components/CreateForm";
+import {
+  ReportStatus,
+  TaskStatus,
+  SocializingLevel,
+} from "@prisma/client";
 
-// Extend Report type locally to include fields returned by the backend
-type ReportWithExtras = Report & {
-  escalationType?: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null;
-  voteCount?: number;
-};
+export default function Reports() {
+  const { reports } = useAppStore();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("recent");
 
-export default function ReportPage() {
-  const [reports, setReports] = useState<ReportWithExtras[]>([]);
-  const [statusFilter, setStatusFilter] = useState<ReportStatus | "ALL">("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedReport, setSelectedReport] = useState<ReportWithExtras | null>(null);
-  const [editingReport, setEditingReport] = useState<ReportWithExtras | null>(null);
-  const [creatingDrive, setCreatingDrive] = useState<ReportWithExtras | null>(null);
-  const [creatingReport, setCreatingReport] = useState(false);
+  const filteredReports = reports
+    .filter((report) => {
+      const matchesSearch =
+        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const statuses: (ReportStatus | "ALL")[] = ["ALL", ...Object.values(ReportStatus)];
+      const matchesStatus =
+        statusFilter === "all" || report.status === statusFilter;
 
-  useEffect(() => {
-    const loadReports = async () => {
-      const query = new URLSearchParams();
-      if (statusFilter !== "ALL") query.append("status", statusFilter);
-      if (searchQuery) query.append("search", searchQuery);
-
-      try {
-        const data: ReportWithExtras[] = await fetch(`/api/reports?${query.toString()}`).then(res =>
-          res.json()
-        );
-        setReports(data);
-      } catch {
-        toast.error("Failed to load reports");
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "recent":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case "votes":
+          return (b.votes?.length ?? 0) - (a.votes?.length ?? 0);
+        case "status":
+          return a.status.localeCompare(b.status);
+        default:
+          return 0;
       }
-    };
-    loadReports();
-  }, [statusFilter, searchQuery]);
-
-  async function refreshReports() {
-    const query = new URLSearchParams();
-    if (statusFilter !== "ALL") query.append("status", statusFilter);
-    if (searchQuery) query.append("search", searchQuery);
-
-    const data: ReportWithExtras[] = await fetch(`/api/reports?${query.toString()}`).then(res =>
-      res.json()
-    );
-    setReports(data);
-  }
-
-  async function handleDelete(id: string) {
-    await fetch(`/api/reports/${id}`, { method: "DELETE" });
-    toast("🗑️ Report deleted");
-    await refreshReports();
-    setSelectedReport(null);
-  }
-
-  async function handleStatusChange(id: string, newStatus: ReportStatus) {
-    const res = await fetch(`/api/reports/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
     });
 
-    if (res.ok) {
-      toast.success("✅ Status updated");
-      await refreshReports();
-      if (selectedReport?.id === id) {
-        setSelectedReport(prev => (prev ? { ...prev, status: newStatus } : null));
-      }
-    } else {
-      toast.error("❌ Failed to update status");
-    }
-  }
+  const mapReportForCard = (report: typeof reports[number]) => ({
+    ...report,
+    votes: report.votes?.map((v) => ({
+      id: v.id,
+      userId: v.userId,
+      user: v.user,
+      reportId: v.reportId,
+      report: v.report,
+      createdAt: v.createdAt,
+    })),
+    tasks: report.tasks?.map((t) => ({
+      id: t.id,
+      volunteerId: t.volunteerId ?? null,
+      reportId: t.reportId,
+      report: t.report,
+      comfort: t.comfort ?? SocializingLevel.SOLO,
+      status: t.status ?? TaskStatus.OPEN,
+      timeSlot: t.timeSlot ?? null,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+      driveId: t.driveId ?? null,
+      drive: t.drive ?? null,
+      volunteer: t.volunteer ?? null,
+    })),
+    reportAuthorities: report.reportAuthorities?.map((ra) => ({
+      id: ra.id,
+      reportId: ra.reportId,
+      report: ra.report,
+      authorityId: ra.authorityId,
+      authority: ra.authority,
+      volunteerId: ra.volunteerId ?? null,
+      volunteer: ra.volunteer ?? null,
+      contactedAt: ra.contactedAt ?? null,
+      status: ra.status,
+      createdAt: ra.createdAt,
+      updatedAt: ra.updatedAt,
+    })),
+  });
 
-  function closeModal() {
-    setSelectedReport(null);
-  }
+  const votingReports = filteredReports
+    .filter((r) => r.status === ReportStatus.ELIGIBLE_DRIVE)
+    .map(mapReportForCard);
+
+  const authorityContactReports = filteredReports
+    .filter((r) => r.status === ReportStatus.ELIGIBLE_AUTHORITY)
+    .map(mapReportForCard);
+
+  const otherReports = filteredReports
+    .filter(
+      (r) =>
+        r.status !== ReportStatus.ELIGIBLE_DRIVE &&
+        r.status !== ReportStatus.ELIGIBLE_AUTHORITY
+    )
+    .map(mapReportForCard);
 
   return (
-    <div className="h-screen overflow-y-auto p-6 relative">
+    <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Community Reports</h1>
-        <div className="flex gap-3">
-          <Button onClick={() => setCreatingReport(true)}>Create Report</Button>
-          <Button asChild>
-            <Link
-              href="/authority"
-              className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
-            >
-              View Authorities
-            </Link>
-          </Button>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Community Reports</h1>
+          <p className="text-muted-foreground">
+            Track environmental issues and community initiatives across India
+          </p>
         </div>
+
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
+          asChild
+        >
+          <Link href="/form?model=Report">
+            <Plus className="h-4 w-4 mr-2" /> Submit Report
+          </Link>
+        </Button>
       </div>
 
-      {/* Filters & Search */}
-      <div className="flex flex-wrap gap-3 mb-6 items-center">
-        {statuses.map(status => (
-          <Button
-            key={status}
-            variant={statusFilter === status ? "default" : "outline"}
-            onClick={() => setStatusFilter(status)}
-          >
-            {status === "ALL" ? "All Reports" : status.replace("_", " ")}
-          </Button>
-        ))}
-        <Input
-          placeholder="Search by title or description"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="ml-auto max-w-xs"
-        />
-      </div>
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search reports by title or description..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
-      {/* Reports Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-lg">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 border">Title</th>
-              <th className="px-4 py-2 border">Reporter</th>
-              <th className="px-4 py-2 border">Description</th>
-              <th className="px-4 py-2 border">Status</th>
-              <th className="px-4 py-2 border">Image</th>
-              <th className="px-4 py-2 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map(r => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 border">{r.title}</td>
-                <td className="px-4 py-2 border">{r.reporter}</td>
-                <td className="px-4 py-2 border">{r.description}</td>
-                <td className="px-4 py-2 border">
-                  <select
-                    value={r.status}
-                    onChange={e => handleStatusChange(r.id, e.target.value as ReportStatus)}
-                    className="border rounded px-2 py-1 text-sm"
-                  >
-                    {Object.values(ReportStatus).map(status => (
-                      <option key={status} value={status}>
-                        {status.replace("_", " ")}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-2 border">
-                  {r.imageUrl && (
-                    <div className="relative w-24 h-16">
-                      <Image src={r.imageUrl} alt="report" fill className="object-cover rounded" />
-                    </div>
-                  )}
-                </td>
-                <td className="px-4 py-2 border flex gap-2 items-center">
-                  <Button size="sm" onClick={() => setSelectedReport(r)}>
-                    See
-                  </Button>
-
-                  {r.escalationType === "CREATE_DRIVE" && (
-                    <Button
-                      size="sm"
-                      className="bg-red-600 text-white rounded-lg animate-pulse"
-                      onClick={() => setCreatingDrive(r)}
-                    >
-                      Create Drive
-                    </Button>
-                  )}
-
-
-                  {/* Contact Authority as clickable button */}
-                  {r.escalationType === "CONTACT_AUTHORITY" && (
-                    <Button
-                      size="sm"
-                      className="bg-red-600 text-white rounded-lg text-sm font-semibold animate-pulse"
-                      onClick={() => window.location.href = "/authority"} // navigate to /authority
-                    >
-                      Contact Authority
-                    </Button>
-                  )}
-                </td>
-              </tr>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full md:w-48">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {Object.values(ReportStatus).map((status) => (
+              <SelectItem key={status} value={status}>
+                {status}
+              </SelectItem>
             ))}
-          </tbody>
-        </table>
+          </SelectContent>
+        </Select>
+
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Most Recent</SelectItem>
+            <SelectItem value="votes">Most Voted</SelectItem>
+            <SelectItem value="status">By Status</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Modal for Report Details */}
-      {selectedReport && !editingReport && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-              onClick={closeModal}
-            >
-              ✕
-            </button>
-            <h2 className="text-2xl font-bold mb-2">{selectedReport.title}</h2>
-            <p className="text-sm text-gray-500 mb-4">By {selectedReport.reporter}</p>
-            <p className="mb-4">{selectedReport.description}</p>
-            {selectedReport.imageUrl && (
-              <div className="relative w-full h-64 mb-4">
-                <Image
-                  src={selectedReport.imageUrl}
-                  alt="report"
-                  fill
-                  className="rounded-lg object-cover"
-                />
-              </div>
-            )}
-            <p className="text-sm text-gray-500 mb-2">Status: {selectedReport.status}</p>
+      {/* Voting Hub */}
+      {votingReports.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            Community Voting Hub ({votingReports.length})
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            These reports need community votes to proceed to action phase.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {votingReports.map((report) => (
+              <ReportCard key={report.id} report={report} showVoting />
+            ))}
+          </div>
+        </div>
+      )}
 
-            {selectedReport.tasks && selectedReport.tasks.length > 0 && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Tasks</h3>
-                <ul className="list-disc list-inside text-sm">
-                  {selectedReport.tasks.map(t => (
-                    <li key={t.id}>
-                      Task: {t.id}, Status: {t.status}, Comfort: {t.comfort}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {/* Authority Contact Hub */}
+      {authorityContactReports.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            Authority Contact Hub ({authorityContactReports.length})
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            These reports are ready for authority contact. Volunteers can reach
+            out to relevant officials.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {authorityContactReports.map((report) => (
+              <ReportCard key={report.id} report={report} showAuthorityContact />
+            ))}
+          </div>
+        </div>
+      )}
 
-            {selectedReport.drives && selectedReport.drives.length > 0 && (
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Drives</h3>
-                <ul className="list-disc list-inside text-sm">
-                  {selectedReport.drives.map(d => (
-                    <li key={d.id}>Drive ID: {d.id}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {/* Other Reports */}
+      {otherReports.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">
+            All Reports ({otherReports.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {otherReports.map((report) => (
+              <ReportCard key={report.id} report={report} />
+            ))}
+          </div>
+        </div>
+      )}
 
-            {/* Edit & Delete Buttons */}
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingReport(selectedReport)}>
-                Edit
-              </Button>
-              <Button variant="destructive" onClick={() => handleDelete(selectedReport.id)}>
-                Delete
-              </Button>
+      {/* Empty State */}
+      {filteredReports.length === 0 && (
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-600 rounded-full flex items-center justify-center">
+              <Search className="h-8 w-8 text-white" />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Form */}
-      {editingReport && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-              onClick={() => setEditingReport(null)}
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              No reports found
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              {searchTerm || statusFilter !== "all"
+                ? "Try adjusting your search or filters."
+                : "Be the first to submit a community report!"}
+            </p>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
+              asChild
             >
-              ✕
-            </button>
-
-            <CreateForm
-              model="Report"
-              initialValues={{
-                id: editingReport.id,
-                reporter: editingReport.reporter,
-                title: editingReport.title,
-                description: editingReport.description,
-                imageUrl: editingReport.imageUrl ?? undefined,
-                status: editingReport.status,
-              }}
-              disableFields={["status"]}
-              onClose={() => setEditingReport(null)}
-              onSuccess={async () => {
-                setEditingReport(null);
-                setSelectedReport(null);
-                await refreshReports();
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Create Drive Form Modal */}
-      {creatingDrive && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-              onClick={() => setCreatingDrive(null)}
-            >
-              ✕
-            </button>
-
-            <h2 className="text-2xl font-bold mb-4">Create Drive for `{creatingDrive.title}`</h2>
-
-            <CreateForm
-              model="Drive"
-              initialValues={{
-                reportId: creatingDrive.id,
-                title: `${creatingDrive.title} Drive`,
-              }}
-              onClose={() => setCreatingDrive(null)}
-              onSuccess={async () => {
-                setCreatingDrive(null);
-                toast.success("Drive created successfully!");
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Create Report Form Modal */}
-      {creatingReport && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl">
-            <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 font-bold text-lg"
-              onClick={() => setCreatingReport(false)}
-            >
-              ✕
-            </button>
-
-            <CreateForm
-              model="Report"
-              onClose={() => setCreatingReport(false)}
-              onSuccess={async () => {
-                setCreatingReport(false);
-                await refreshReports();
-              }}
-            />
+              <Link href="/form?model=Report">
+                <Plus className="h-4 w-4 mr-2" /> Submit First Report
+              </Link>
+            </Button>
           </div>
         </div>
       )}

@@ -11,16 +11,18 @@ model User {
   id        String    @id @default(cuid())
   email     String    @unique
   name      String?
-  password  String    // hashed password
+  password  String?    // optional for Google users
   role      UserRole  @default(USER)
+  resetToken String?   // stores temporary token for password reset
+  resetTokenExpiry DateTime?  // optional expiry timestamp for token
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  // Relations
   reportVotes ReportVote[]
   driveVotes  DriveVote[]
   discussions Discussion[]
   volunteer   Volunteer?
+  reports     Report[]
 }
 
 enum UserRole {
@@ -29,17 +31,15 @@ enum UserRole {
 }
 
 model Volunteer {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  phone     String?
-  tasks     Task[]
-  joinedAt  DateTime @default(now())
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id])
+  phone             String?
+  tasks             Task[]
+  joinedAt          DateTime           @default(now())
+  reportAuthorities ReportAuthority[]
 }
 
-//
-// 🔄 REPORTS & VOTING
-//
 model Report {
   id                String             @id @default(cuid())
   reporterId        String
@@ -71,12 +71,9 @@ model ReportVote {
   report    Report   @relation(fields: [reportId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([userId, reportId]) 
+  @@unique([userId, reportId])
 }
 
-//
-// 🔄 DRIVES
-//
 model Drive {
   id          String           @id @default(cuid())
   title       String
@@ -86,7 +83,7 @@ model Drive {
   endDate     DateTime?
   status      DriveStatus      @default(PLANNED)
   createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   votingOpenAt   DateTime?
   votingCloseAt  DateTime?
@@ -115,12 +112,9 @@ model DriveVote {
   drive     Drive    @relation(fields: [driveId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([userId, driveId]) 
+  @@unique([userId, driveId])
 }
 
-//
-// 🔄 TASKS
-//
 model Task {
   id          String           @id @default(cuid())
   reportId    String
@@ -139,9 +133,6 @@ model Task {
   updatedAt   DateTime         @default(now())
 }
 
-//
-// 🔄 OTHER ENTITIES
-//
 model Beautification {
   id          String       @id @default(cuid())
   driveId     String
@@ -202,15 +193,12 @@ model Discussion {
   createdAt DateTime         @default(now())
 }
 
-//
-// ENUMS
-//
 enum ReportStatus {
   PENDING
   ELIGIBLE_AUTHORITY
   AUTHORITY_CONTACTED
   ELIGIBLE_DRIVE
-  VOTING_FINALIZED   
+  VOTING_FINALIZED
   IN_PROGRESS
   RESOLVED
 }
@@ -223,7 +211,7 @@ enum TaskStatus {
 
 enum DriveStatus {
   PLANNED
-  VOTING_FINALIZED   
+  VOTING_FINALIZED
   ONGOING
   COMPLETED
 }

@@ -1,83 +1,211 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ReportCard } from "@/components/ReportCard";
+import { DriveCard } from "@/components/DriveCard";
+import { FileText, Users, Award, TrendingUp, Plus } from "lucide-react";
 
-export default async function HomePage() {
-  // Fetch report stats from the database
-  const reports = await prisma.report.findMany();
-  const totalReports = reports.length;
-  const pending = reports.filter(r => r.status === "PENDING").length;
-  const inProgress = reports.filter(r => r.status === "IN_PROGRESS").length;
-  const resolved = reports.filter(r => r.status === "RESOLVED").length;
-  const authorityContacted = reports.filter(r => r.status === "AUTHORITY_CONTACTED").length;
+
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const [reports, drives, volunteers] = await Promise.all([
+    prisma.report.findMany({ include: { reporter: true } }),
+    prisma.drive.findMany(),
+    prisma.volunteer.findMany(),
+  ]);
+
+  // Derived stats (following your rules)
+  const activeReportsCount = reports.filter((r) => r.status !== "RESOLVED").length;
+  const completedReportsCount = reports.filter((r) => r.status === "RESOLVED").length;
+
+  // Active drives are those not completed
+  const activeDrivesCount = drives.filter((d) => d.status !== "COMPLETED").length;
+
+  const volunteerCount = volunteers.length;
+
+  // Recent reports (by createdAt, newest first) - show 3
+  const recentReports = reports
+    .slice() // clone
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 3);
+
+  // Upcoming drives: PLANNED or VOTING_FINALIZED, ordered by startDate asc, show 3
+  const upcomingDrives = drives
+    .filter((d) => d.status === "PLANNED" || d.status === "VOTING_FINALIZED")
+    .slice()
+    .sort((a, b) => a.startDate.getTime() - b.startDate.getTime())
+    .slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-8">
+    <main className="container mx-auto px-4 py-8 space-y-8">
+      {/* Hero */}
+      <section className="relative rounded-2xl overflow-hidden shadow-elevated">
+        <div className="absolute inset-0">
+          <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-blue-600" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25" />
+        </div>
 
-      {/* Hero Section */}
-      <section className="text-center max-w-3xl mb-12">
-        <h1 className="text-6xl font-extrabold mb-6 text-gray-900 drop-shadow-sm">
-          Dhara
-        </h1>
-        <p className="text-lg text-gray-700 mb-8">
-          Your voice matters. Every report submitted helps shape safer, cleaner, and stronger neighborhoods. Be part of real change in your community.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/report"
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
-          >
-            Make an Impact
-          </Link>
+        <div className="relative z-10 p-8 md:p-12 text-white">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Welcome back!
+            </h1>
+            <p className="text-xl opacity-90 mb-6">
+              Together, we&#39;re building a cleaner, greener India. Every action counts in our journey toward environmental stewardship.
+            </p>
 
-          <Link
-            href="/about"
-            className="px-6 py-3 border border-gray-300 bg-white rounded-xl shadow hover:bg-gray-50 transition"
-          >
-            Learn About Us
-          </Link>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-smooth shadow-gentle"
+                asChild
+              >
+                <Link href="/form?model=Report">
+                  <span className="inline-flex items-center">
+                    <Plus className="h-5 w-5 mr-2" />
+                    Submit Report
+                  </span>
+                </Link>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-smooth shadow-gentle"
+                asChild
+              >
+                <Link href="/drives">
+                  <span className="inline-flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Browse Drives
+                  </span>
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Dynamic Stats Section */}
-      <section className="grid md:grid-cols-5 gap-6 max-w-5xl w-full mb-16 text-center">
-        <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-bold mb-2">{totalReports}</h3>
-          <p className="text-gray-600">Total Reports</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-bold mb-2">{pending}</h3>
-          <p className="text-gray-600">Pending</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-bold mb-2">{inProgress}</h3>
-          <p className="text-gray-600">In Progress</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-bold mb-2">{authorityContacted}</h3>
-          <p className="text-gray-600">Authority Contacted</p>
-        </div>
-        <div className="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
-          <h3 className="text-2xl font-bold mb-2">{resolved}</h3>
-          <p className="text-gray-600">Resolved</p>
-        </div>
-      </section>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-border shadow-gentle hover:shadow-elevated transition-smooth">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-sm font-medium">
+              <span>Active Reports</span>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary">{activeReportsCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Awaiting community action</p>
+          </CardContent>
+        </Card>
 
-      {/* Call-to-Action Section */}
-      <section className="bg-blue-600 text-white rounded-2xl p-10 max-w-3xl w-full text-center mb-16 shadow-lg">
-        <h2 className="text-3xl font-bold mb-4">Join the Change Today</h2>
-        <p className="mb-6">Submit your first report and see the direct impact it can have in your area.</p>
-          <Link
-            href="/form?model=Report"
-            className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl shadow hover:bg-gray-100 transition"
-          >
-            Submit a Report
-          </Link>
-      </section>
+        <Card className="border-border shadow-gentle hover:shadow-elevated transition-smooth">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-sm font-medium">
+              <span>Active Drives</span>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-accent">{activeDrivesCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Community drives in progress</p>
+          </CardContent>
+        </Card>
 
-      {/* Footer */}
-      <footer className="mt-12 text-sm text-gray-500 flex flex-col items-center gap-2">
-        <p>Made with ❤️ for the community</p>
-      </footer>
+        <Card className="border-border shadow-gentle hover:shadow-elevated transition-smooth">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-sm font-medium">
+              <span>Completed</span>
+              <Award className="h-4 w-4 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-success">{completedReportsCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Issues resolved</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-gentle hover:shadow-elevated transition-smooth">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-sm font-medium">
+              <span>Volunteers</span>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-warning">{volunteerCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active community members</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Reports */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Recent Reports</h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/report">View All</Link>
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            {recentReports.length > 0 ? (
+              recentReports.map((report) => (
+                <ReportCard
+                  key={report.id}
+                  report={report}
+                  showVoting={report.status === "VOTING_FINALIZED"}
+                  showAuthorityContact={report.status === "AUTHORITY_CONTACTED"}
+                />
+              ))
+            ) : (
+              <Card className="p-8 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No reports yet. Be the first to submit one!</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/form?model=Report">Submit First Report</Link>
+                </Button>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Drives */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Upcoming Drives</h2>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/drives">View All</Link>
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            {upcomingDrives.length > 0 ? (
+              upcomingDrives.map((drive) => (
+                <DriveCard
+                  key={drive.id}
+                  drive={drive}
+                  showVoting={drive.status === "VOTING_FINALIZED"}
+                  showSignup={drive.status === "PLANNED"}
+                />
+              ))
+            ) : (
+              <Card className="p-8 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No upcoming drives. Propose one based on community reports!</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/drives/new">Propose Drive</Link>
+                </Button>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

@@ -221,7 +221,7 @@ export default function AuthoritiesPage() {
                     .filter((ra): ra is ReportAuthority & { report: Report } => !!ra.report)
                     .map((ra) => (
                       <li key={ra.id}>
-                        {ra.report.title} — Status: {ra.report.status}
+                        {ra.report.title} - Status: {ra.report.status}
                       </li>
                     ))}
                 </ul>

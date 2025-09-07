@@ -4,10 +4,19 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { Home, BarChart3, HardDrive } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const { data: session } = useSession();
+
+  const navItems = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/report", label: "Reports", icon: BarChart3 },
+    { href: "/drives", label: "Drives", icon: HardDrive },
+  ];
 
   return (
     <>
@@ -15,42 +24,56 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo / Brand */}
           <Link href="/" className="text-2xl font-bold text-blue-600">
-            Dhara
+            DHARA
           </Link>
 
           {/* Navigation Links */}
           <div className="hidden md:flex gap-6 items-center">
-            <Link
-              href="/"
-              className={`hover:text-blue-600 transition ${
-                pathname === "/"
-                  ? "font-semibold text-blue-600"
-                  : "text-gray-700"
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              href="/report"
-              className={`hover:text-blue-600 transition ${
-                pathname === "/report"
-                  ? "font-semibold text-blue-600"
-                  : "text-gray-700"
-              }`}
-            >
-              Reports
-            </Link>
+            {navItems.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-2 transition ${
+                    isActive
+                      ? "font-semibold text-blue-600"
+                      : "text-gray-700 hover:text-blue-600"
+                  }`}
+                >
+                  <Icon
+                    size={18}
+                    className={isActive ? "text-blue-600" : "text-gray-500"}
+                  />
+                  {label}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Action buttons: Tasks & Drives */}
+          {/* Action buttons */}
           <div className="hidden md:flex gap-2 items-center">
-            <Button asChild>
-              <Link href="/tasks">Tasks</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/drives">Drives</Link>
-            </Button>
+
+            {/* Auth Buttons */}
+            {!session ? (
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/auth/login">Login</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/auth/register">Signup</Link>
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="destructive"
+                onClick={() => signOut({ callbackUrl: "/" })}
+              >
+                Logout
+              </Button>
+            )}
             <Button onClick={() => setIsFeedbackOpen(true)}>Feedback</Button>
+
           </div>
 
           {/* Mobile Hamburger placeholder */}
