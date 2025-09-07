@@ -36,39 +36,40 @@ export async function GET(request: NextRequest) {
       },
       votes: true,
       monitorings: true,
-      _count: { select: { votes: true } }, 
+      _count: { select: { votes: true } },
     },
   });
 
-  const oneWeekAgo = subDays(new Date(), 7);
+  const sevenDaysAgo = subDays(new Date(), 7);
 
   const enrichedReports = reports.map((report) => {
     let escalationType: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null = null;
 
-    // Escalation: Pending → Eligible for Authority
-    if (report.status === ReportStatus.PENDING && report.createdAt <= oneWeekAgo) {
+    // Contact Authority visible immediately if status is PENDING or ELIGIBLE_AUTHORITY
+    if (
+      report.status === ReportStatus.PENDING ||
+      report.status === ReportStatus.ELIGIBLE_AUTHORITY
+    ) {
       escalationType = "CONTACT_AUTHORITY";
     }
 
-    // Escalation: Authority Contacted → Eligible for Drive
+    // Escalation: Authority Contacted → Eligible for Drive (only after 7+ days)
     if (
       report.status === ReportStatus.AUTHORITY_CONTACTED &&
-      report.eligibleAt &&
-      report.eligibleAt <= oneWeekAgo
+      report.updatedAt <= sevenDaysAgo
     ) {
       escalationType = "CREATE_DRIVE";
     }
 
-    return { 
-      ...report, 
-      escalationType, 
-      voteCount: report._count.votes, 
+    return {
+      ...report,
+      escalationType,
+      voteCount: report._count.votes,
     };
   });
 
   return NextResponse.json(enrichedReports);
 }
-
 
 export async function POST(request: NextRequest) {
   const data = await request.json();

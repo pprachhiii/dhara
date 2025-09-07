@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Check if this user already voted on this drive
-    const existing = await prisma.vote.findFirst({
+    // ✅ Use driveVote model instead of vote
+    const existing = await prisma.driveVote.findFirst({
       where: { userId, driveId },
     });
 
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const vote = await prisma.vote.create({
+    const vote = await prisma.driveVote.create({
       data: { userId, driveId },
     });
 
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
       { message: "Vote submitted successfully", vote },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error("Error creating drive vote:", error);
     return NextResponse.json(
       { error: "Failed to submit vote" },
       { status: 500 }

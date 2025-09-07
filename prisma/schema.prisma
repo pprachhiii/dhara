@@ -7,14 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  password  String    // hashed password
+  role      UserRole  @default(USER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  reportVotes ReportVote[]
+  driveVotes  DriveVote[]
+  discussions Discussion[]
+  volunteer   Volunteer?
+}
+
+enum UserRole {
+  USER
+  VOLUNTEER
+}
+
+model Volunteer {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  phone     String?
+  tasks     Task[]
+  joinedAt  DateTime @default(now())
+}
+
+//
+// 🔄 REPORTS & VOTING
+//
 model Report {
   id                String             @id @default(cuid())
-  reporter          String
+  reporterId        String
+  reporter          User               @relation(fields: [reporterId], references: [id])
   title             String
   description       String
   imageUrl          String?
   status            ReportStatus       @default(PENDING)
-  eligibleAt        DateTime?          // when it became eligible for escalation
+  eligibleAt        DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -26,13 +60,13 @@ model Report {
   reportAuthorities ReportAuthority[]
   drives            DriveReport[]
   votes             ReportVote[]
-  discussions       ReportDiscussion[]
   monitorings       Monitoring[]
 }
 
 model ReportVote {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id])
   reportId  String
   report    Report   @relation(fields: [reportId], references: [id])
   createdAt DateTime @default(now())
@@ -40,33 +74,9 @@ model ReportVote {
   @@unique([userId, reportId]) 
 }
 
-model ReportDiscussion {
-  id        String   @id @default(cuid())
-  reportId  String
-  report    Report   @relation(fields: [reportId], references: [id])
-  userId    String
-  content   String
-  createdAt DateTime @default(now())
-}
-
-model Task {
-  id          String           @id @default(cuid())
-  reportId    String
-  report      Report           @relation(fields: [reportId], references: [id])
-
-  driveId     String?
-  drive       Drive?           @relation(fields: [driveId], references: [id])
-
-  volunteerId String?
-  volunteer   Volunteer?       @relation(fields: [volunteerId], references: [id])
-
-  comfort     SocializingLevel
-  timeSlot    DateTime?
-  status      TaskStatus       @default(OPEN)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-}
-
+//
+// 🔄 DRIVES
+//
 model Drive {
   id          String           @id @default(cuid())
   title       String
@@ -76,7 +86,7 @@ model Drive {
   endDate     DateTime?
   status      DriveStatus      @default(PLANNED)
   createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  updatedAt   DateTime         @default(now())
 
   votingOpenAt   DateTime?
   votingCloseAt  DateTime?
@@ -84,7 +94,6 @@ model Drive {
 
   reports     DriveReport[]
   votes       DriveVote[]
-  discussions DriveDiscussion[]
   tasks       Task[]
   beautify    Beautification[]
   monitorings Monitoring[]
@@ -101,6 +110,7 @@ model DriveReport {
 model DriveVote {
   id        String   @id @default(cuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id])
   driveId   String
   drive     Drive    @relation(fields: [driveId], references: [id])
   createdAt DateTime @default(now())
@@ -108,15 +118,30 @@ model DriveVote {
   @@unique([userId, driveId]) 
 }
 
-model DriveDiscussion {
-  id        String   @id @default(cuid())
-  driveId   String
-  drive     Drive    @relation(fields: [driveId], references: [id])
-  userId    String
-  content   String
-  createdAt DateTime @default(now())
+//
+// 🔄 TASKS
+//
+model Task {
+  id          String           @id @default(cuid())
+  reportId    String
+  report      Report           @relation(fields: [reportId], references: [id])
+
+  driveId     String?
+  drive       Drive?           @relation(fields: [driveId], references: [id])
+
+  volunteerId String?
+  volunteer   Volunteer?       @relation(fields: [volunteerId], references: [id])
+
+  comfort     SocializingLevel
+  timeSlot    DateTime?
+  status      TaskStatus       @default(OPEN)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now())
 }
 
+//
+// 🔄 OTHER ENTITIES
+//
 model Beautification {
   id          String       @id @default(cuid())
   driveId     String
@@ -139,18 +164,18 @@ model Monitoring {
 }
 
 model Authority {
-  id                String             @id @default(cuid())
-  name              String
-  type              AuthorityType
-  city              String
-  region            String?
-  email             String?
-  phone             String?
-  website           String?
-  active            Boolean            @default(false)
-  submittedBy       String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  type      AuthorityType
+  city      String
+  region    String?
+  email     String?
+  phone     String?
+  website   String?
+  active    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+
   reportAuthorities ReportAuthority[]
 }
 
@@ -160,22 +185,26 @@ model ReportAuthority {
   report      Report        @relation(fields: [reportId], references: [id])
   authorityId String
   authority   Authority     @relation(fields: [authorityId], references: [id])
-  volunteerId String?       // who logged the contact
+  volunteerId String?
+  volunteer   Volunteer?    @relation(fields: [volunteerId], references: [id])
   status      ContactStatus @default(PENDING)
   contactedAt DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @default(now())
 }
 
-model Volunteer {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  phone     String?
-  tasks     Task[]
-  joinedAt  DateTime @default(now())
+model Discussion {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  phase     DiscussionPhase
+  content   String
+  createdAt DateTime         @default(now())
 }
 
+//
+// ENUMS
+//
 enum ReportStatus {
   PENDING
   ELIGIBLE_AUTHORITY
@@ -230,4 +259,9 @@ enum MonitoringStatus {
   ACTIVE
   COMPLETED
   ESCALATED
+}
+
+enum DiscussionPhase {
+  REPORT_VOTING
+  DRIVE_VOTING
 }

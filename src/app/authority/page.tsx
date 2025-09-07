@@ -23,7 +23,7 @@ import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
 type AuthorityDetail = Authority & {
-  reportAuthorities?: (ReportAuthority & { report: Report })[];
+  reportAuthorities?: (ReportAuthority & { report?: Report })[];
 };
 
 export default function AuthoritiesPage() {
@@ -212,16 +212,21 @@ export default function AuthoritiesPage() {
                 "-"
               )}
             </p>
-            {selectedAuthority.reportAuthorities?.length && (
+
+            {selectedAuthority.reportAuthorities?.length ? (
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">Related Reports</h3>
                 <ul className="list-disc list-inside text-sm">
-                  {selectedAuthority.reportAuthorities.map((ra) => (
-                    <li key={ra.id}>{ra.report.title} — Status: {ra.report.status}</li>
-                  ))}
+                  {selectedAuthority.reportAuthorities
+                    .filter((ra): ra is ReportAuthority & { report: Report } => !!ra.report)
+                    .map((ra) => (
+                      <li key={ra.id}>
+                        {ra.report.title} — Status: {ra.report.status}
+                      </li>
+                    ))}
                 </ul>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

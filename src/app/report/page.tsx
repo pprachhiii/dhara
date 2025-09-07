@@ -9,13 +9,19 @@ import { Report, ReportStatus } from "@/lib/types";
 import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
+// Extend Report type locally to include fields returned by the backend
+type ReportWithExtras = Report & {
+  escalationType?: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null;
+  voteCount?: number;
+};
+
 export default function ReportPage() {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<ReportWithExtras[]>([]);
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [editingReport, setEditingReport] = useState<Report | null>(null);
-  const [creatingDrive, setCreatingDrive] = useState<Report | null>(null); // New state
+  const [selectedReport, setSelectedReport] = useState<ReportWithExtras | null>(null);
+  const [editingReport, setEditingReport] = useState<ReportWithExtras | null>(null);
+  const [creatingDrive, setCreatingDrive] = useState<ReportWithExtras | null>(null);
   const [creatingReport, setCreatingReport] = useState(false);
 
   const statuses: (ReportStatus | "ALL")[] = ["ALL", ...Object.values(ReportStatus)];
@@ -27,7 +33,9 @@ export default function ReportPage() {
       if (searchQuery) query.append("search", searchQuery);
 
       try {
-        const data: Report[] = await fetch(`/api/reports?${query.toString()}`).then(res => res.json());
+        const data: ReportWithExtras[] = await fetch(`/api/reports?${query.toString()}`).then(res =>
+          res.json()
+        );
         setReports(data);
       } catch {
         toast.error("Failed to load reports");
@@ -41,7 +49,9 @@ export default function ReportPage() {
     if (statusFilter !== "ALL") query.append("status", statusFilter);
     if (searchQuery) query.append("search", searchQuery);
 
-    const data: Report[] = await fetch(`/api/reports?${query.toString()}`).then(res => res.json());
+    const data: ReportWithExtras[] = await fetch(`/api/reports?${query.toString()}`).then(res =>
+      res.json()
+    );
     setReports(data);
   }
 
@@ -63,7 +73,7 @@ export default function ReportPage() {
       toast.success("✅ Status updated");
       await refreshReports();
       if (selectedReport?.id === id) {
-        setSelectedReport(prev => prev ? { ...prev, status: newStatus } : null);
+        setSelectedReport(prev => (prev ? { ...prev, status: newStatus } : null));
       }
     } else {
       toast.error("❌ Failed to update status");
@@ -78,26 +88,23 @@ export default function ReportPage() {
     <div className="h-screen overflow-y-auto p-6 relative">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-  <h1 className="text-3xl font-bold">Community Reports</h1>
-  <div className="flex gap-3">
-    <Button onClick={() => setCreatingReport(true)}>
-      Create Report
-    </Button>
-    <Button asChild>
-      <Link
-        href="/authority"
-        className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
-      >
-        View Authorities
-      </Link>
-    </Button>
-  </div>
-</div>
-
+        <h1 className="text-3xl font-bold">Community Reports</h1>
+        <div className="flex gap-3">
+          <Button onClick={() => setCreatingReport(true)}>Create Report</Button>
+          <Button asChild>
+            <Link
+              href="/authority"
+              className="px-12 py-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition"
+            >
+              View Authorities
+            </Link>
+          </Button>
+        </div>
+      </div>
 
       {/* Filters & Search */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">
-        {statuses.map((status) => (
+        {statuses.map(status => (
           <Button
             key={status}
             variant={statusFilter === status ? "default" : "outline"}
@@ -109,7 +116,7 @@ export default function ReportPage() {
         <Input
           placeholder="Search by title or description"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={e => setSearchQuery(e.target.value)}
           className="ml-auto max-w-xs"
         />
       </div>
@@ -128,7 +135,7 @@ export default function ReportPage() {
             </tr>
           </thead>
           <tbody>
-            {reports.map((r) => (
+            {reports.map(r => (
               <tr key={r.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 border">{r.title}</td>
                 <td className="px-4 py-2 border">{r.reporter}</td>
@@ -136,10 +143,10 @@ export default function ReportPage() {
                 <td className="px-4 py-2 border">
                   <select
                     value={r.status}
-                    onChange={(e) => handleStatusChange(r.id, e.target.value as ReportStatus)}
+                    onChange={e => handleStatusChange(r.id, e.target.value as ReportStatus)}
                     className="border rounded px-2 py-1 text-sm"
                   >
-                    {Object.values(ReportStatus).map((status) => (
+                    {Object.values(ReportStatus).map(status => (
                       <option key={status} value={status}>
                         {status.replace("_", " ")}
                       </option>
@@ -153,13 +160,32 @@ export default function ReportPage() {
                     </div>
                   )}
                 </td>
-                <td className="px-4 py-2 border flex gap-2">
+                <td className="px-4 py-2 border flex gap-2 items-center">
                   <Button size="sm" onClick={() => setSelectedReport(r)}>
                     See
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => setCreatingDrive(r)}>
-                    Create Drive
-                  </Button>
+
+                  {r.escalationType === "CREATE_DRIVE" && (
+                    <Button
+                      size="sm"
+                      className="bg-red-600 text-white rounded-lg animate-pulse"
+                      onClick={() => setCreatingDrive(r)}
+                    >
+                      Create Drive
+                    </Button>
+                  )}
+
+
+                  {/* Contact Authority as clickable button */}
+                  {r.escalationType === "CONTACT_AUTHORITY" && (
+                    <Button
+                      size="sm"
+                      className="bg-red-600 text-white rounded-lg text-sm font-semibold animate-pulse"
+                      onClick={() => window.location.href = "/authority"} // navigate to /authority
+                    >
+                      Contact Authority
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -196,7 +222,7 @@ export default function ReportPage() {
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">Tasks</h3>
                 <ul className="list-disc list-inside text-sm">
-                  {selectedReport.tasks.map((t) => (
+                  {selectedReport.tasks.map(t => (
                     <li key={t.id}>
                       Task: {t.id}, Status: {t.status}, Comfort: {t.comfort}
                     </li>
@@ -209,7 +235,7 @@ export default function ReportPage() {
               <div className="mt-4">
                 <h3 className="font-semibold mb-2">Drives</h3>
                 <ul className="list-disc list-inside text-sm">
-                  {selectedReport.drives.map((d) => (
+                  {selectedReport.drives.map(d => (
                     <li key={d.id}>Drive ID: {d.id}</li>
                   ))}
                 </ul>
@@ -218,16 +244,10 @@ export default function ReportPage() {
 
             {/* Edit & Delete Buttons */}
             <div className="mt-6 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setEditingReport(selectedReport)}
-              >
+              <Button variant="outline" onClick={() => setEditingReport(selectedReport)}>
                 Edit
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleDelete(selectedReport.id)}
-              >
+              <Button variant="destructive" onClick={() => handleDelete(selectedReport.id)}>
                 Delete
               </Button>
             </div>
@@ -253,7 +273,7 @@ export default function ReportPage() {
                 reporter: editingReport.reporter,
                 title: editingReport.title,
                 description: editingReport.description,
-                imageUrl: editingReport.imageUrl,
+                imageUrl: editingReport.imageUrl ?? undefined,
                 status: editingReport.status,
               }}
               disableFields={["status"]}
@@ -279,9 +299,7 @@ export default function ReportPage() {
               ✕
             </button>
 
-            <h2 className="text-2xl font-bold mb-4">
-              Create Drive for `{creatingDrive.title}``
-            </h2>
+            <h2 className="text-2xl font-bold mb-4">Create Drive for `{creatingDrive.title}`</h2>
 
             <CreateForm
               model="Drive"
@@ -298,6 +316,7 @@ export default function ReportPage() {
           </div>
         </div>
       )}
+
       {/* Create Report Form Modal */}
       {creatingReport && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto">
@@ -320,7 +339,6 @@ export default function ReportPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

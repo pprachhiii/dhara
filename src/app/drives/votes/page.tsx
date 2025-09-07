@@ -4,77 +4,132 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
-import { Drive } from "@/lib/types";
+import { Discussion, Drive } from "@/lib/types"; 
+import { format } from "date-fns";
 
-export default function DriveVotePage() {
-  const [drives, setDrives] = useState<Drive[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+type DriveWithExtras = Drive & {
+  voteCount?: number;
+};
+
+export default function DrivesVotingPage() {
+  const [drives, setDrives] = useState<DriveWithExtras[]>([]);
+  const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [comment, setComment] = useState("");
 
   useEffect(() => {
-    const loadDrives = async () => {
-      try {
-        const query = new URLSearchParams();
-        if (searchQuery) query.append("search", searchQuery);
+    fetchDrives();
+    fetchDiscussions();
+  }, []);
 
-        const res = await fetch(`/api/drives?${query.toString()}`);
-        const json = await res.json();
+  async function fetchDrives() {
+    try {
+      const data: DriveWithExtras[] = await fetch("/api/drives").then(res => res.json());
+      setDrives(data);
+    } catch {
+      toast.error("Failed to load drives");
+    }
+  }
 
-        // ✅ Ensure drives is always an array
-        const data = Array.isArray(json) ? json : json?.drives || [];
-        setDrives(data);
-      } catch (err) {
-        console.error("Failed to load drives", err);
-        toast.error("Failed to load drives");
-        setDrives([]); // fallback to empty
+  async function fetchDiscussions() {
+    try {
+      const data: Discussion[] = await fetch("/api/discussion?phase=DRIVE_VOTING").then(res => res.json());
+      setDiscussions(data);
+    } catch {
+      toast.error("Failed to load discussions");
+    }
+  }
+
+  async function handleVote(driveId: string) {
+    try {
+      const res = await fetch("/api/votes/drives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "demo-user", driveId }),
+      });
+
+      if (res.ok) {
+        toast.success("Vote submitted!");
+        await fetchDrives();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Vote failed");
       }
-    };
+    } catch {
+      toast.error("Vote failed");
+    }
+  }
 
-    loadDrives();
-  }, [searchQuery]);
+  async function handleAddComment() {
+    if (!comment.trim()) return;
+    try {
+      const res = await fetch("/api/discussion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: "demo-user", phase: "DRIVE_VOTING", content: comment }),
+      });
+
+      if (res.ok) {
+        setComment("");
+        await fetchDiscussions();
+      } else {
+        toast.error("Failed to add comment");
+      }
+    } catch {
+      toast.error("Failed to add comment");
+    }
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Vote for Drives</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center">Community Drives Voting & Discussion</h1>
 
-      {/* Search */}
-      <Input
-        placeholder="Search drives..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="mb-6 max-w-xs"
-      />
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {drives.length === 0 ? (
-          <p className="text-gray-500">No drives found</p>
-        ) : (
-          drives.map((d) => (
+      <div className="flex gap-6">
+        {/* Voting Section - Left */}
+        <div className="w-1/2 space-y-4">
+          <h2 className="text-2xl font-bold mb-2">Vote for Drives</h2>
+          {drives.map(d => (
             <div
               key={d.id}
-              className="border rounded-2xl shadow-md p-4 flex flex-col"
+              className="flex justify-between items-center border rounded-xl p-4 bg-white shadow-sm hover:bg-gray-50 transition"
             >
-              <h2 className="font-bold text-lg mb-2">{d.title}</h2>
-              <p className="text-sm text-gray-600 mb-4">{d.description}</p>
-              <Button
-                onClick={async () => {
-                  const res = await fetch("/api/votes/drives", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userId: "USER_ID", driveId: d.id }),
-                  });
-                  if (res.ok) {
-                    toast.success("Vote submitted!");
-                  } else {
-                    const err = await res.json();
-                    toast.error(err.error || "Vote failed");
-                  }
-                }}
-              >
-                Vote
-              </Button>
+              <div>
+                <p className="font-medium">{d.title}</p>
+                <p className="text-gray-500 text-sm">
+                  Participants: {d.participant} | Start: {format(new Date(d.startDate), "PPP")}
+                  {d.endDate && ` | End: ${format(new Date(d.endDate), "PPP")}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => handleVote(d.id)}>👍 Vote</Button>
+                <span>{d.voteCount ?? 0}</span>
+              </div>
             </div>
-          ))
-        )}
+          ))}
+        </div>
+
+        {/* Discussion Section - Right */}
+        <div className="w-1/2 flex flex-col">
+          <h2 className="text-2xl font-bold mb-2">Community Discussion</h2>
+          <div className="flex-1 space-y-2 overflow-y-auto border rounded p-3 mb-3 max-h-[600px]">
+            {discussions.length === 0 ? (
+              <p className="text-sm text-gray-500">No comments yet.</p>
+            ) : (
+              discussions.map(d => (
+                <div key={d.id} className="border-b pb-1 text-sm">
+                  <span className="font-medium">{d.userId}</span>: {d.content}
+                </div>
+              ))
+            )}
+          </div>
+          <div className="flex gap-2 mt-auto">
+            <Input
+              placeholder="Add a comment..."
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+            />
+            <Button onClick={handleAddComment}>Send</Button>
+          </div>
+        </div>
       </div>
     </div>
   );

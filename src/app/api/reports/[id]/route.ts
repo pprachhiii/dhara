@@ -29,7 +29,6 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PATCH /api/reports/:id
 export async function PATCH(request: NextRequest, context: Context) {
   const { id } = await context.params;
   const data = await request.json();
@@ -80,7 +79,6 @@ export async function DELETE(request: NextRequest, context: Context) {
     await prisma.task.deleteMany({ where: { reportId: id } });
     await prisma.reportAuthority.deleteMany({ where: { reportId: id } });
     await prisma.driveReport.deleteMany({ where: { reportId: id } });
-    await prisma.vote.deleteMany({ where: { drive: { reports: { some: { reportId: id } } } } });
     await prisma.monitoring.deleteMany({ where: { reportId: id } });
 
     await prisma.report.delete({ where: { id } });

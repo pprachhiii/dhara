@@ -64,87 +64,89 @@ DHARA empowers citizens of all ages-students, professionals, homemakers, childre
 
 ---
 
-# Useflow
+# UserFlow
 
 ## **1. Report Phase (Citizen → System)**
 
 - Citizen submits report (photo/video + description).
 - Status: **Pending**.
-
-⏳ After 7 days → **Eligible for Authority Contact**.
+- ⏳ After 7 days → **Eligible for Authority Contact**.
 
 ---
 
 ## **2. Authority Contact Phase (Volunteer → Authority)**
 
-- Report shows **Contact Official button** (with authority details like phone/email).
-- When clicked → popup: _“Did you contact the official?”_ → volunteer confirms, system logs **name + date**.
+- Volunteers see **Contact Official** button (authority details shown).
+- When clicked → system logs **volunteer name + date**.
 - Status → **Authority Contacted**.
 
 ⏳ After 7 more days:
 
-- ✅ Authority responded → Status: **Resolved by Authority** → jump to Beautification/Monitoring.
-- ❌ No response → Status: **Eligible for Drive**.
+- ✅ If authority resolves → **Resolved by Authority** → move to Beautification/Monitoring.
+- ❌ If no response → **Eligible for Community Voting**.
 
 ---
 
-## **3. Community Voting Phase (Reports) (Community → System)**
+## **3. Centralized Report Voting Phase (Community → System)**
 
-- Reports that are **Eligible for Drive** appear in the **report voting list**.
-- Community members can:
+- **All reports that became Eligible for Drive** appear together in **one voting hub**.
+- **Community does not discuss per report** — instead, there’s an **overall voting discussion space** where people:
 
-  - **Vote** on which reports deserve action first.
-  - **Add a short discussion comment** (ideas, suggestions, reasons for supporting, availability notes).
+  - Advocate for priority areas.
+  - Suggest why certain reports deserve earlier action.
+  - Flag constraints (e.g., accessibility, urgency, safety).
 
 **Voting Window:**
 
-- Starts immediately when report becomes **Eligible for Drive**.
-- Open for **7 days**.
-- `votingOpenAt` = now, `votingCloseAt` = now + 7 days.
+- Opens when reports hit eligibility.
+- Lasts **7 days** (`votingOpenAt` → `votingCloseAt`).
 
 **When Voting Ends:**
 
-- Votes are frozen.
-- Reports with enough community support move to **In Progress**.
-- Status: **In Progress (Drive Scheduling can begin)**.
+- Votes freeze.
+- Top reports move to **In Progress** → Drive creation begins.
 
 ---
 
-## **4. Drive Creation & Voting Phase (Community → System)**
+## **4. Drive Creation & Centralized Drive Voting Phase**
 
-- Once a report is **In Progress**, community members can **propose specific Drives**.
-- One report → may have **multiple Drives** (phased cleanups or recurring efforts).
+- Once reports are **In Progress**, volunteers propose **specific Drives** (cleanup, tree planting, phased actions).
 
-Each **proposed Drive** includes:
+- **All proposed Drives are listed in a shared Drive Voting Hub**.
 
-- Report(s) linked
-- Tentative Date & Time (community-chosen)
-- Task assignments (solo / low-social / group, based on volunteer comfort & availability)
-- **Drive-specific discussion space** for coordination (_“I can bring gloves”_, _“Let’s meet at the north gate”_).
+- Each Drive has:
 
-**Drive Voting Window:**
+  - Linked reports.
+  - Proposed date/time.
+  - Suggested task breakdown.
 
-- Opens immediately when a Drive is proposed.
-- Open for **7 days**.
-- `votingOpenAt` = now, `votingCloseAt` = now + 7 days.
+- **Discussion happens at the Drive Voting Hub level**:
+
+  - Coordination of logistics (_“I’ll bring gloves”_, _“North gate is better meeting point”_).
+  - General availability talks.
+
+**Voting Window:**
+
+- 7 days for each Drive proposal.
 
 **When Voting Ends:**
 
-- Votes are frozen.
-- Drive with highest support is **finalized** (status: **Planned → Voting Finalized → Ongoing**).
-- Volunteers notified to prepare.
+- Highest-supported Drive(s) get **finalized** → status: **Planned → Ongoing**.
+- Volunteers notified.
 
 ---
 
-## **5. Action & Care Phase (Volunteers → Area)**
+## **5. Action & Care Phase**
 
-- Drive executed → before/after pics, collected waste, trees planted, etc.
-- Status: **Drive Completed (linked to report)**.
+- Drive executed.
 
-🔁 Since **multiple Drives can attach to one report**:
+- Evidence logged (before/after pics, collected waste, planted trees).
 
-- Report stays **Open** until the community marks it “done.”
-- Closure happens only after the last Drive + monitoring.
+- Status: **Drive Completed (linked back to reports)**.
+
+- Reports stay **Open** until the community marks them “done.”
+
+- Multiple Drives can attach to the same report.
 
 ---
 
@@ -152,68 +154,42 @@ Each **proposed Drive** includes:
 
 - After Drives:
 
-  - Beautification (murals, trees, signage).
-  - Monitoring for \~1 month (weekly check-ins logged).
+  - Beautification projects (murals, signage, tree guards).
+  - Monitoring for \~1 month.
 
-- ✅ If clean → Status: **Sustained**.
+- ✅ If clean → **Sustained**.
 
-- ❌ If dirty again → loop back to **Report Phase**.
-
----
-
-# **Visual Lifecycle (with Discussions & Voting)**
-
-1. **Report (Pending)** →
-
-2. **Authority Contact Eligible** →
-
-   - Volunteer logs contact → **Authority Contacted**
-   - ✅ Authority resolves → **Resolved by Authority**
-   - ❌ No response → **Eligible for Drive**
-
-3. **Report Voting (7 days)** → report finalized → Status: **In Progress**
-
-4. **Drive Proposals + Drive Voting (7 days each)** → finalized into **Drive(s)**
-
-   - One report → many Drives
-   - Each drive has its own voting + discussion cycle
-
-5. **Drives Executed → Beautification → Monitoring (1 month)** →
-
-   - ✅ Sustained OR
-   - 🔁 Back to Report
+- ❌ If dirty again → cycle restarts at Report Phase.
 
 ---
 
-# **Where Discussions Fit in**
+# **Where Discussions Happen (Centralized)**
 
-- **At Report Voting** → people explain _why_ a site deserves action.
-- **At Drive Voting/Setup** → volunteers coordinate practicals (time, materials, roles).
-- Keeps it transparent + collaborative, but still structured.
+1. **Report Voting Hub** → one discussion thread for prioritization (not per report).
+2. **Drive Voting Hub** → one discussion thread for coordination (not per drive).
+
+👉 This keeps voting and talking **simple, transparent, and collective**.
 
 ---
 
-## Cron Jobs
+## Cron Jobs (Adjusted for Centralization)
 
-**Daily checks:**
+- Daily:
 
-- Move reports from Pending → Eligible for Authority Contact (if > 7 days).
-- Move reports from Authority Contacted → Eligible for Drive (if > 7 days).
-- Close report voting when `votingCloseAt < now()`.
-- Close drive voting when `votingCloseAt < now()`.
+  - Move reports across phases (Pending → Eligible, etc.).
+  - Auto-close report voting after 7 days.
+  - Auto-close drive voting after 7 days.
 
-**Weekly aggregation (optional):**
+- Weekly:
 
-- Summarize report votes + finalize priorities.
+  - Summarize report votes + finalize drive priorities.
 
-**Drive reminders (optional):**
+- Before Drives:
 
-- Notify volunteers before scheduled Drives.
+  - Remind volunteers of upcoming drives.
 
-**Post-Drive monitoring (1 month):**
+- After Drives:
 
-- Runs every 7 days after a Drive.
-- Sends reminders to volunteers to log updates.
-- Automatically ends after 1-month monitoring.
+  - Weekly monitoring reminders until 1 month ends.
 
 ---
