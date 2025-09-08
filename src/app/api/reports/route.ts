@@ -4,6 +4,12 @@ import { ReportStatus } from "@prisma/client";
 import { subDays } from "date-fns";
 import { requireAuth } from "@/lib/serverAuth";
 
+type AuthResponse = {
+  error: boolean;
+  user?: { id: string; email: string };
+  response?: NextResponse;
+};
+
 // GET /api/reports (public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -66,23 +72,41 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(enrichedReports);
 }
 
-// POST /api/reports (protected)
+// POST /api/reports
 export async function POST(request: NextRequest) {
-  const { error, response, session } = await requireAuth(request);
-  if (error || !session) return response;
+  const authResult = (await requireAuth(request)) as AuthResponse;
+  if (authResult.error || !authResult.user) return authResult.response!;
 
   const data = await request.json();
 
+  const requiredFields = ["title", "description", "city", "country", "pinCode"];
+  for (const field of requiredFields) {
+    if (!data[field]) {
+      return NextResponse.json(
+        { error: `${field} is required` },
+        { status: 400 }
+      );
+    }
+  }
+
   const newReport = await prisma.report.create({
     data: {
-      reporterId: session.user.id, // safe now
+      reporterId: authResult.user.id,
       title: data.title,
       description: data.description,
-      imageUrl: data.imageUrl,
       status: ReportStatus.PENDING,
-      eligibleAt: new Date(),
+
+      media: data.media ?? [],
+
+      city: data.city,
+      region: data.region ?? null,
+      country: data.country,
+      pinCode: data.pinCode,
+
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
     },
   });
 
-  return NextResponse.json(newReport);
+  return NextResponse.json(newReport, { status: 201 });
 }

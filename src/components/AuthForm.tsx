@@ -57,7 +57,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           localStorage.setItem("token", result.token);
         }
         toast.success("Login successful!");
-        router.push("/");
+        router.push("/"); // redirect to home
       }
     } catch (err) {
       console.error(err);
@@ -111,6 +111,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
         />
         {errors.password && (
           <p className="text-red-500 text-sm">{errors.password.message}</p>
+        )}
+
+        {/* Forgot password link for login mode */}
+        {mode === "login" && (
+          <p className="text-right mt-1">
+            <Link href="/password/forget-password" className="text-blue-600 hover:underline text-sm">
+              Forgot Password?
+            </Link>
+          </p>
         )}
       </div>
 

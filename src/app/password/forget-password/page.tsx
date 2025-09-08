@@ -30,7 +30,6 @@ export default function ForgotPasswordPage() {
       } else {
         toast.success(data.message || "Password reset email sent");
 
-        // ✅ Redirect to a confirmation page
         router.push("/password/check-email");
       }
     } finally {

@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
         phone: data.phone || null,
         website: data.website || null,
         submittedBy: data.submittedBy || null,
-        // active: false -> schema already defaults to false
       },
     });
 

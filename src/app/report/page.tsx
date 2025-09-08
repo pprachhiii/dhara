@@ -120,7 +120,7 @@ export default function Reports() {
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
           asChild
         >
-          <Link href="/form?model=Report">
+          <Link href="/report/new">
             <Plus className="h-4 w-4 mr-2" /> Submit Report
           </Link>
         </Button>
@@ -233,7 +233,7 @@ export default function Reports() {
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
               asChild
             >
-              <Link href="/form?model=Report">
+              <Link href="/report/new">
                 <Plus className="h-4 w-4 mr-2" /> Submit First Report
               </Link>
             </Button>

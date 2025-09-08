@@ -19,18 +19,33 @@ export async function GET() {
 // Body: { name: string, email?: string, phone?: string }
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, phone } = await req.json();
+    const { userId, phone } = await req.json();
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    }
+
+    // Check if volunteer already exists for this user
+    const existing = await prisma.volunteer.findUnique({
+      where: { userId },
+    });
+
+    if (existing) {
+      return NextResponse.json({ error: "Volunteer already exists for this user" }, { status: 400 });
     }
 
     const volunteer = await prisma.volunteer.create({
-      data: { name, email: email || null, phone: phone || null },
+      data: {
+        userId,
+        phone: phone || null,
+      },
+      include: { user: true }, // include user info if needed
     });
 
     return NextResponse.json({ message: "Volunteer registered", volunteer }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("POST /volunteer error:", err);
     return NextResponse.json({ error: "Failed to register volunteer" }, { status: 500 });
   }
 }
+

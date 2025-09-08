@@ -1,45 +1,20 @@
-import { PrismaClient } from "@prisma/client";
-import { hash } from "bcryptjs";
-import nodemailer from "nodemailer";
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { sendResetEmail } from "@/lib/email";
+import { hash } from "bcryptjs";
+import crypto from "crypto";
 
-const prisma = new PrismaClient();
+export const hashPassword = async (password: string) => {
+  return await hash(password, 12);
+};
 
-// Configure SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT),
-  secure: process.env.SMTP_SECURE === "true",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+export const generateResetToken = () => {
+  return crypto.randomBytes(32).toString("hex");
+};
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { mode, email, password, token, userEmail } = body;
-
-    // ----------------- SET PASSWORD -----------------
-    if (mode === "set") {
-      // Here, userEmail should come from your own auth verification (e.g., JWT)
-      if (!userEmail) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-      }
-      if (!password) {
-        return NextResponse.json({ error: "Password required" }, { status: 400 });
-      }
-
-      const hashed = await hash(password, 12);
-      await prisma.user.update({
-        where: { email: userEmail },
-        data: { password: hashed },
-      });
-
-      return NextResponse.json({ message: "Password set successfully" });
-    }
+    const { mode, email, password, token } = await req.json();
 
     // ----------------- FORGOT PASSWORD -----------------
     if (mode === "forgot") {
@@ -48,7 +23,7 @@ export async function POST(req: NextRequest) {
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) return NextResponse.json({ error: "No user found with this email" }, { status: 404 });
 
-      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetToken = generateResetToken();
       const resetTokenExpiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
 
       await prisma.user.update({
@@ -57,14 +32,7 @@ export async function POST(req: NextRequest) {
       });
 
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
-      await transporter.sendMail({
-        from: `"Support" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: "Password Reset Request",
-        html: `<p>You requested a password reset. Click below to reset your password:</p>
-               <a href="${resetUrl}">${resetUrl}</a>
-               <p>This link will expire in 1 hour.</p>`,
-      });
+      await sendResetEmail(email, resetUrl);
 
       return NextResponse.json({ message: "Password reset email sent" });
     }
@@ -80,7 +48,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
       }
 
-      const hashed = await hash(password, 12);
+      const hashed = await hashPassword(password);
       await prisma.user.update({
         where: { id: user.id },
         data: { password: hashed, resetToken: null, resetTokenExpiry: null },

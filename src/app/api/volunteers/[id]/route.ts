@@ -32,8 +32,6 @@ export async function PATCH(request: NextRequest, context: Context) {
     const updated = await prisma.volunteer.update({
       where: { id },
       data: {
-        name: data.name ?? undefined,
-        email: data.email ?? undefined,
         phone: data.phone ?? undefined,
       },
     });

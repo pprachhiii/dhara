@@ -10,11 +10,10 @@ import {
   TaskStatus,
   SocializingLevel,
   AuthorityType,
-  ReportStatus,
   DriveStatus,
 } from "@/lib/types";
 
-type ModelType = "Report" | "Task" | "Drive" | "Authority";
+type ModelType = "Task" | "Drive" | "Authority";
 type FormState = Record<string, string | number | undefined>;
 
 interface CreateFormProps {
@@ -25,52 +24,37 @@ interface CreateFormProps {
   onSuccess?: () => void;
 }
 
-// -------------------- Use literal arrays instead of types --------------------
 const SOCIALIZING_LEVELS: readonly SocializingLevel[] = ["SOLO", "DUAL", "GROUP"];
 const TASK_STATUSES: readonly TaskStatus[] = ["OPEN", "ASSIGNED", "DONE"];
 const AUTHORITY_TYPES: readonly AuthorityType[] = ["GOVERNMENT", "NGO", "OTHERS"];
-const REPORT_STATUSES: readonly ReportStatus[] = [
-  "PENDING",
-  "ELIGIBLE_AUTHORITY",
-  "AUTHORITY_CONTACTED",
-  "ELIGIBLE_DRIVE",
-  "VOTING_FINALIZED",
-  "IN_PROGRESS",
-  "RESOLVED",
-];
 const DRIVE_STATUSES: readonly DriveStatus[] = ["PLANNED", "VOTING_FINALIZED", "ONGOING", "COMPLETED"];
 
 interface Field {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "datetime-local" | "select";
+  type: "text" | "textarea" | "number" | "datetime-local" | "select" | "file";
   options?: readonly string[];
 }
 
 export default function CreateForm({
   model,
-  initialValues,
+  initialValues = {},
   disableFields = [],
   onClose,
   onSuccess,
 }: CreateFormProps) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>(initialValues || {});
+  const [form, setForm] = useState<FormState>({ ...initialValues });
+  const [uploading, _setUploading] = useState(false);
 
-  // Sync form when editing
   useEffect(() => {
-    if (initialValues) setForm(initialValues);
-  }, [initialValues]);
+    setForm({ ...initialValues });
+  }, [initialValues, model]);
+
+  const isEdit = Boolean(initialValues?.id);
 
   const getFields = (): Field[] => {
     switch (model) {
-      case "Report":
-        return [
-          { name: "title", label: "Title", type: "text" },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "imageUrl", label: "Image URL", type: "text" },
-          { name: "status", label: "Status", type: "select", options: REPORT_STATUSES },
-        ];
       case "Task":
         return [
           { name: "reportId", label: "Report ID", type: "text" },
@@ -106,15 +90,14 @@ export default function CreateForm({
   };
 
   const handleChange = (name: string, value: string | number) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm(prev => ({ ...prev, [name]: value }));
   };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isEdit = !!initialValues?.id;
     const endpointMap: Record<ModelType, string> = {
-      Report: isEdit ? `/api/reports/${initialValues?.id}` : "/api/reports",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
       Drive: isEdit ? `/api/drives/${initialValues?.id}` : "/api/drives",
       Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
@@ -135,6 +118,7 @@ export default function CreateForm({
       toast.success(`${model} ${isEdit ? "updated" : "created"} successfully!`);
       onSuccess?.();
       onClose?.();
+
       if (!isEdit) router.push(`/${model.toLowerCase()}`);
     } catch (error) {
       console.error(error);
@@ -150,10 +134,10 @@ export default function CreateForm({
       className="space-y-4 bg-white p-6 rounded-xl shadow max-w-md mx-auto mt-6"
     >
       <h1 className="text-2xl font-bold mb-4">
-        {initialValues ? `Edit ${model}` : `Create ${model}`}
+        {isEdit ? `Edit ${model}` : `Create ${model}`}
       </h1>
 
-      {fields.map((field) => {
+      {fields.map(field => {
         const value = form[field.name] ?? "";
 
         if (field.type === "textarea") {
@@ -162,7 +146,7 @@ export default function CreateForm({
               key={field.name}
               placeholder={field.label}
               value={value as string}
-              onChange={(e) => handleChange(field.name, e.target.value)}
+              onChange={e => handleChange(field.name, e.target.value)}
               disabled={disableFields.includes(field.name)}
             />
           );
@@ -173,12 +157,12 @@ export default function CreateForm({
             <select
               key={field.name}
               value={value as string}
-              onChange={(e) => handleChange(field.name, e.target.value)}
+              onChange={e => handleChange(field.name, e.target.value)}
               className="border p-2 rounded w-full"
               disabled={disableFields.includes(field.name)}
             >
               <option value="">Select {field.label}</option>
-              {field.options?.map((opt) => (
+              {field.options?.map(opt => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>
@@ -187,6 +171,8 @@ export default function CreateForm({
           );
         }
 
+        
+
         return (
           <Input
             key={field.name}
@@ -194,7 +180,7 @@ export default function CreateForm({
             placeholder={field.label}
             value={value}
             disabled={disableFields.includes(field.name)}
-            onChange={(e) =>
+            onChange={e =>
               handleChange(
                 field.name,
                 field.type === "number" ? Number(e.target.value) : e.target.value
@@ -205,8 +191,8 @@ export default function CreateForm({
       })}
 
       <div className="flex gap-2 mt-2">
-        <Button type="submit" className="flex-1">
-          {initialValues ? "Update" : "Submit"} {model}
+        <Button type="submit" className="flex-1" disabled={uploading}>
+          {isEdit ? "Update" : "Submit"} {model}
         </Button>
         {onClose && (
           <Button type="button" variant="outline" className="flex-1" onClick={onClose}>

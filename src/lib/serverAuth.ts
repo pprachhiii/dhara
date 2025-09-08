@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
 
-// Helper to require authentication in API routes
-export async function requireAuth(request: NextRequest) {
-  // Expect token in Authorization header: "Bearer <token>"
+export type AuthResponse = {
+  error: boolean;
+  user?: { id: string; email: string };
+  response?: NextResponse;
+};
+
+export async function requireAuth(request: NextRequest): Promise<AuthResponse> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return {
@@ -12,8 +17,6 @@ export async function requireAuth(request: NextRequest) {
   }
 
   const token = authHeader.split(" ")[1];
-
-  // TODO: validate token (e.g., verify JWT or check in DB)
   if (!token) {
     return {
       error: true,
@@ -21,8 +24,19 @@ export async function requireAuth(request: NextRequest) {
     };
   }
 
-  // If needed, you can decode the token to get user info
-  const user = { email: "user@example.com", id: "current-user-id" }; // replace with real decoded token info
-
-  return { error: false, user };
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
+      sub: string;
+      email: string;
+    };
+    return {
+      error: false,
+      user: { id: payload.sub, email: payload.email },
+    };
+  } catch{
+    return {
+      error: true,
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
 }

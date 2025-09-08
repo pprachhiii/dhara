@@ -23,6 +23,7 @@ model User {
   discussions Discussion[]
   volunteer   Volunteer?
   reports     Report[]
+  submittedAuthorities Authority[] 
 }
 
 enum UserRole {
@@ -41,27 +42,36 @@ model Volunteer {
 }
 
 model Report {
-  id                String             @id @default(cuid())
-  reporterId        String
-  reporter          User               @relation(fields: [reporterId], references: [id])
-  title             String
-  description       String
-  imageUrl          String?
-  status            ReportStatus       @default(PENDING)
-  eligibleAt        DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id          String   @id @default(cuid())
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id])
+  title       String
+  description String
+  imageUrl    String?          // legacy, keep for now
+  media       String[] @default([]) // NEW: multimedia (images/videos URLs)
+  status      ReportStatus @default(PENDING)
 
-  votingOpenAt      DateTime?
-  votingCloseAt     DateTime?
-  finalVoteCount    Int?
+  latitude    Float?
+  longitude   Float?
+  city        String?
+  region      String?
+  country     String?
 
-  tasks             Task[]
-  reportAuthorities ReportAuthority[]
-  drives            DriveReport[]
-  votes             ReportVote[]
-  monitorings       Monitoring[]
+  pinCode     String? @unique
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tasks              Task[]
+  reportAuthorities  ReportAuthority[]
+  drives             DriveReport[]
+  votes              ReportVote[]
+  monitorings        Monitoring[]
+  votingOpenAt       DateTime?
+  votingCloseAt      DateTime?
+  finalVoteCount     Int?
 }
+
 
 model ReportVote {
   id        String   @id @default(cuid())
@@ -166,6 +176,9 @@ model Authority {
   active    Boolean   @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now())
+
+  submittedById String?  // foreign key
+  submittedBy   User?    @relation(fields: [submittedById], references: [id])
 
   reportAuthorities ReportAuthority[]
 }

@@ -54,15 +54,19 @@ export interface Report {
   reporter: User;
   title: string;
   description: string;
-  imageUrl?: string | null;
+  imageUrl?: string | null;     // ImageKit URL
   status: ReportStatus;
-  eligibleAt?: Date | null;
+
+  latitude?: number | null;
+  longitude?: number | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+
+  pinCode?: string | null; 
+
   createdAt: Date;
   updatedAt: Date;
-
-  votingOpenAt?: Date | null;
-  votingCloseAt?: Date | null;
-  finalVoteCount?: number | null;
 
   tasks?: Task[];
   reportAuthorities?: ReportAuthority[];
