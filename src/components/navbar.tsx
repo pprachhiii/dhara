@@ -2,15 +2,38 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Home, BarChart3, HardDrive } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const { data: session } = useSession();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // ✅ Check login status on mount + whenever path changes
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, [pathname]);
+
+  // ✅ Also listen to storage changes (multi-tab sync)
+  useEffect(() => {
+    const syncAuth = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+    };
+
+    window.addEventListener("storage", syncAuth);
+    return () => window.removeEventListener("storage", syncAuth);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    router.push("/auth/login"); // ✅ redirect to login page, not API
+  };
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
@@ -51,12 +74,11 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Action buttons */}
+          {/* Auth & Feedback */}
           <div className="hidden md:flex gap-2 items-center">
-
-            {/* Auth Buttons */}
-            {!session ? (
+            {!isLoggedIn ? (
               <>
+                {/* ✅ Link to PAGES not API */}
                 <Button asChild variant="outline">
                   <Link href="/auth/login">Login</Link>
                 </Button>
@@ -65,15 +87,11 @@ export default function Navbar() {
                 </Button>
               </>
             ) : (
-              <Button
-                variant="destructive"
-                onClick={() => signOut({ callbackUrl: "/" })}
-              >
+              <Button variant="destructive" onClick={handleLogout}>
                 Logout
               </Button>
             )}
             <Button onClick={() => setIsFeedbackOpen(true)}>Feedback</Button>
-
           </div>
 
           {/* Mobile Hamburger placeholder */}

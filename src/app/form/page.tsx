@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import CreateForm from "@/components/CreateForm";
-import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 
 type ModelType = "Report" | "Task" | "Drive" | "Authority";
@@ -11,17 +10,26 @@ type ModelType = "Report" | "Task" | "Drive" | "Authority";
 function FormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, status } = useSession();
   const queryModel = (searchParams.get("model") as ModelType) || "Report";
   const [model, setModel] = useState<ModelType>(queryModel);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Redirect if not logged in
+  // Check if user is logged in using localStorage token
   useEffect(() => {
-    if (status === "unauthenticated") {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
       toast.error("You must be logged in to submit a report");
-      router.push("/auth/login");
+      router.push("/api/auth/login");
+      return;
     }
-  }, [status, router]);
+
+    // Optional: you can decode token or fetch user info
+    // For simplicity, just store a fake user ID
+    setUserId("current-user-id"); // replace with real user ID if available
+    setLoading(false);
+  }, [router]);
 
   // Sync URL query param with state
   useEffect(() => {
@@ -29,18 +37,13 @@ function FormContent() {
     setModel(urlModel);
   }, [searchParams]);
 
-  // Show loading while session is loading
-  if (status === "loading") {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
-    // Redirect already handled, just render nothing
-    return null;
-  }
-
   // Initial values for the form
-  const initialValues = model === "Report" ? { reporterId: session.user.id } : {};
+  const initialValues =
+    model === "Report" && userId ? { reporterId: userId } : {};
 
   return (
     <div className="p-6">

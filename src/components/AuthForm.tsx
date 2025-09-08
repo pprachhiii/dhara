@@ -1,93 +1,145 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { signIn } from "next-auth/react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import toast from "react-hot-toast";
 
 type AuthFormProps = {
-  type: "login" | "register";
+  mode: "login" | "register";
 };
 
-export default function AuthForm({ type }: AuthFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+type FormData = {
+  name?: string;
+  email: string;
+  password: string;
+};
+
+type AuthResponse = {
+  token?: string;
+  error?: string;
+};
+
+export default function AuthForm({ mode }: AuthFormProps) {
+  const router = useRouter();
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
-    setError(null);
-
     try {
-      if (type === "register") {
-        // call your API to create user
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
+      const res = await fetch(`/api/auth/${mode}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || "Registration failed");
-        }
+      let result: AuthResponse = {};
+      try {
+        result = await res.json();
+      } catch {
+        result = {};
       }
 
-      // Sign in with credentials
-      await signIn("credentials", {
-        redirect: true,
-        email,
-        password,
-        callbackUrl: "/",
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError("Something went wrong");
+      if (!res.ok) {
+        toast.error(result.error || "Something went wrong");
+        return;
+      }
+
+      if (mode === "register") {
+        toast.success("Registered successfully! Please login.");
+        router.push("/auth/login");
+      } else {
+        if (result.token) {
+          localStorage.setItem("token", result.token);
+        }
+        toast.success("Login successful!");
+        router.push("/");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Request failed. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogle = async () => {
-    await signIn("google", { callbackUrl: "/" });
-  };
-
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold mb-4">{type === "login" ? "Login" : "Register"}</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 bg-white p-8 rounded-2xl shadow-lg max-w-xl w-full mx-auto mt-12 min-h-[28rem] flex flex-col justify-center"
+    >
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        {mode === "login" ? "Login to DHARA" : "Create your DHARA Account"}
+      </h1>
+
+      {mode === "register" && (
+        <div className="space-y-1">
+          <Input
+            type="text"
+            placeholder="Full Name"
+            {...register("name")}
+            disabled={loading}
+            className="p-3 text-lg"
+          />
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <Input
           type="email"
           placeholder="Email"
-          value={email}
-          required
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded"
+          {...register("email", { required: "Email is required" })}
+          disabled={loading}
+          className="p-3 text-lg"
         />
-        <input
+        {errors.email && (
+          <p className="text-red-500 text-sm">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        <Input
           type="password"
           placeholder="Password"
-          value={password}
-          required
-          onChange={(e) => setPassword(e.target.value)}
-          className="border p-2 rounded"
-        />
-        <button
-          type="submit"
+          {...register("password", { required: "Password is required" })}
           disabled={loading}
-          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-        >
-          {loading ? "Processing..." : type === "login" ? "Login" : "Register"}
-        </button>
-      </form>
-      <hr className="my-4" />
-      <button
-        onClick={handleGoogle}
-        className="bg-red-500 text-white py-2 rounded hover:bg-red-600 w-full"
+          className="p-3 text-lg"
+        />
+        {errors.password && (
+          <p className="text-red-500 text-sm">{errors.password.message}</p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full py-3 text-lg rounded-xl"
       >
-        {type === "login" ? "Login with Google" : "Register with Google"}
-      </button>
-    </div>
+        {loading ? "Please wait..." : mode === "login" ? "Login" : "Register"}
+      </Button>
+
+      {/* Link to switch between login/register */}
+      <p className="text-center mt-4 text-gray-600">
+        {mode === "login" ? (
+          <>
+            Don&#39;t have an account?{" "}
+            <Link href="/auth/register" className="text-blue-600 hover:underline">
+              Register
+            </Link>
+          </>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-blue-600 hover:underline">
+              Login
+            </Link>
+          </>
+        )}
+      </p>
+    </form>
   );
 }

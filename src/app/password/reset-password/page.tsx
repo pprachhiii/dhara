@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
         }
       } else {
         toast.success(data.message || "Password reset successfully");
-        router.push("/auth/login"); // redirect after successful reset
+        router.push("/api/auth/login"); // redirect after successful reset
       }
     } finally {
       setLoading(false);

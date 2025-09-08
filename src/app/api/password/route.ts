@@ -1,7 +1,5 @@
-import { authOptions } from "../auth/[...nextauth]/options";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-import { getServerSession } from "next-auth";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -22,26 +20,24 @@ const transporter = nodemailer.createTransport({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { mode, email, password, token } = body;
+    const { mode, email, password, token, userEmail } = body;
 
     // ----------------- SET PASSWORD -----------------
     if (mode === "set") {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.email) {
+      // Here, userEmail should come from your own auth verification (e.g., JWT)
+      if (!userEmail) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
       }
       if (!password) {
         return NextResponse.json({ error: "Password required" }, { status: 400 });
       }
 
-      // Hash and save the password
       const hashed = await hash(password, 12);
       await prisma.user.update({
-        where: { email: session.user.email },
+        where: { email: userEmail },
         data: { password: hashed },
       });
 
-      // ✅ Because JWT callback checks for `!user.password`, this automatically clears `needsPassword`
       return NextResponse.json({ message: "Password set successfully" });
     }
 
@@ -60,7 +56,7 @@ export async function POST(req: NextRequest) {
         data: { resetToken, resetTokenExpiry },
       });
 
-      const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
+      const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
       await transporter.sendMail({
         from: `"Support" <${process.env.SMTP_USER}>`,
         to: email,
