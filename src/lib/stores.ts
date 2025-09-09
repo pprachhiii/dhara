@@ -10,90 +10,88 @@ import {
   ReportAuthority,
 } from "@/lib/types";
 
-// --------------- Store shape ---------------
 interface AppStore {
-  // 🔹 User + drives (for DriveCard)
   currentUser: User | null;
   drives: Drive[];
+  reports: Report[];
+
+  setUser: (user: User | null) => void;
+  setDrives: (drives: Drive[]) => void;
+  setReports: (reports: Report[]) => void;
+  fetchReports: () => Promise<void>;
 
   voteOnDrive: (driveId: string) => void;
   signupForDrive: (driveId: string, userId: string) => void;
 
-  setUser: (user: User | null) => void;
-  setDrives: (drives: Drive[]) => void;
-
-  // 🔹 Reports (your existing part)
-  reports: Report[];
   voteOnReport: (reportId: string) => void;
   contactAuthority: (reportId: string) => void;
 }
 
-// --------------- Zustand store ---------------
 export const useAppStore = create<AppStore>((set, get) => ({
-  // ----------- drives + user -----------
   currentUser: null,
   drives: [],
+  reports: [],
 
   setUser: (user) => set({ currentUser: user }),
   setDrives: (drives) => set({ drives }),
+  setReports: (reports) => set({ reports }),
+
+  fetchReports: async () => {
+    try {
+      const res = await fetch("/api/reports");
+      if (!res.ok) throw new Error("Failed to fetch reports");
+      const data: Report[] = await res.json();
+      set({ reports: data });
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+    }
+  },
 
   voteOnDrive: (driveId) => {
     const { drives, currentUser } = get();
     if (!currentUser) return;
-
-    const updated = drives.map((drive) =>
-      drive.id === driveId
+    const updated = drives.map((d) =>
+      d.id === driveId
         ? {
-            ...drive,
+            ...d,
             votes: [
-              ...(drive.votes ?? []),
-              {
-                id: crypto.randomUUID(),
-                driveId,
-                userId: currentUser.id,
-                user: currentUser,
-                createdAt: new Date(),
-              } as DriveVote,
+              ...(d.votes ?? []),
+              { id: crypto.randomUUID(), driveId, userId: currentUser.id, user: currentUser, createdAt: new Date() } as DriveVote,
             ],
           }
-        : drive
+        : d
     );
-
     set({ drives: updated });
   },
 
   signupForDrive: (driveId, userId) => {
     const { drives } = get();
-
-    const updated = drives.map((drive) => {
-      if (drive.id !== driveId) return drive;
-
-      const newTask: Task = {
-        id: crypto.randomUUID(),
-        driveId,
-        reportId: "",
-        comfort: "GROUP",
-        timeSlot: null,
-        status: "ASSIGNED" as TaskStatus,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        report: {} as Report,
-        volunteerId: userId,
-        volunteer: null,
-        drive,
-      };
-
-      return {
-        ...drive,
-        tasks: [...(drive.tasks ?? []), newTask],
-      };
-    });
-
+    const updated = drives.map((d) =>
+      d.id === driveId
+        ? {
+            ...d,
+            tasks: [
+              ...(d.tasks ?? []),
+              {
+                id: crypto.randomUUID(),
+                driveId,
+                reportId: "",
+                comfort: "GROUP",
+                timeSlot: null,
+                status: "ASSIGNED" as TaskStatus,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                report: {} as Report,
+                volunteerId: userId,
+                volunteer: null,
+                drive: d,
+              } as Task,
+            ],
+          }
+        : d
+    );
     set({ drives: updated });
   },
-
-  // ----------- reports -----------
-  reports: [],
 
   voteOnReport: (reportId) =>
     set((state) => ({
@@ -103,12 +101,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
               ...r,
               votes: [
                 ...(r.votes ?? []),
-                {
-                  id: Math.random().toString(),
-                  userId: "temp-user",
-                  reportId: r.id,
-                  createdAt: new Date(),
-                } as Partial<ReportVote>, // mark as partial to avoid strictness
+                { id: crypto.randomUUID(), reportId, userId: "temp-user", createdAt: new Date() } as Partial<ReportVote>,
               ] as ReportVote[],
             }
           : r
@@ -123,12 +116,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
               ...r,
               reportAuthorities: [
                 ...(r.reportAuthorities ?? []),
-                {
-                  id: Math.random().toString(),
-                  reportId: r.id,
-                  status: "CONTACTED",
-                  createdAt: new Date(),
-                } as Partial<ReportAuthority>, // mark as partial
+                { id: crypto.randomUUID(), reportId, status: "CONTACTED", createdAt: new Date() } as Partial<ReportAuthority>,
               ] as ReportAuthority[],
             }
           : r

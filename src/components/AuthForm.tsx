@@ -19,8 +19,9 @@ type FormData = {
 };
 
 type AuthResponse = {
-  token?: string;
   error?: string;
+  message?: string;
+  user?: { id: string; email: string; name?: string };
 };
 
 export default function AuthForm({ mode }: AuthFormProps) {
@@ -35,6 +36,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include", // ✅ include cookie
       });
 
       let result: AuthResponse = {};
@@ -50,14 +52,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
       }
 
       if (mode === "register") {
-        toast.success("Registered successfully! Please login.");
-        router.push("/auth/login");
+        toast.success("Account created! You are now logged in.");
+        router.push("/"); // ✅ auto-login, redirect home
       } else {
-        if (result.token) {
-          localStorage.setItem("token", result.token);
-        }
         toast.success("Login successful!");
-        router.push("/"); // redirect to home
+        router.push("/"); // ✅ cookie already set
       }
     } catch (err) {
       console.error(err);
@@ -116,7 +115,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
         {/* Forgot password link for login mode */}
         {mode === "login" && (
           <p className="text-right mt-1">
-            <Link href="/password/forget-password" className="text-blue-600 hover:underline text-sm">
+            <Link
+              href="/password/forget-password"
+              className="text-blue-600 hover:underline text-sm"
+            >
               Forgot Password?
             </Link>
           </p>

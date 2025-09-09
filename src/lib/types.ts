@@ -73,6 +73,8 @@ export interface Report {
   drives?: DriveReport[];
   votes?: ReportVote[];
   monitorings?: Monitoring[];
+  media?: string[];
+
 }
 
 export interface ReportVote {

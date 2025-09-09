@@ -160,14 +160,10 @@ export default function ReportForm({ reportId }: ReportFormProps) {
       const fd = new FormData();
       fd.append("file", file);
 
-      const token = localStorage.getItem("token"); // grab JWT
-
       const res = await fetch("/api/upload", {
         method: "POST",
         body: fd,
-        headers: {
-          Authorization: `Bearer ${token}`, // send token for auth
-        },
+        credentials: "include",
       });
 
       if (!res.ok) throw new Error("Upload failed");
@@ -181,7 +177,6 @@ export default function ReportForm({ reportId }: ReportFormProps) {
       setUploading(false);
     }
   };
-
 
 
   const handleRemoveMedia = (index: number) => {
@@ -205,17 +200,13 @@ export default function ReportForm({ reportId }: ReportFormProps) {
     }
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-
       const res = await fetch(
         isEdit ? `/api/reports/${editId}` : "/api/reports",
         {
           method: isEdit ? "PATCH" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, 
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
+          credentials: "include", // ✅ send cookie automatically
         }
       );
 
@@ -231,6 +222,7 @@ export default function ReportForm({ reportId }: ReportFormProps) {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">

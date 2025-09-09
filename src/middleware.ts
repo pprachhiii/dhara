@@ -5,8 +5,7 @@ export async function middleware(request: NextRequest) {
 
   // --- Restrict auth pages for logged-in users ---
   if (pathname.startsWith("/auth/login") || pathname.startsWith("/auth/register")) {
-    const token = request.cookies.get("token")?.value; 
-    // 👆 safer than localStorage because middleware runs on server
+    const token = request.cookies.get("token")?.value;
 
     if (token) {
       // already logged in → redirect away
@@ -21,14 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // --- Protect API write operations ---
   if (pathname.startsWith("/api/") && ["POST", "PATCH", "DELETE"].includes(request.method)) {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    // TODO: validate token (e.g., JWT verify)
+    const token = request.cookies.get("token")?.value;
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

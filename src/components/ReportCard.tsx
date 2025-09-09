@@ -27,7 +27,7 @@ export function ReportCard({
 
   const getStatusBadge = (status: ReportStatus) => {
     const statusConfig: Record<ReportStatus, { label: string; className: string }> = {
-      PENDING: { label: "Pending Review", className: "phase-pending" },
+      PENDING: { label: "Pending", className: "phase-pending" },
       ELIGIBLE_AUTHORITY: { label: "Eligible for Authority Contact", className: "phase-voting" },
       AUTHORITY_CONTACTED: { label: "Authority Contacted", className: "phase-progress" },
       ELIGIBLE_DRIVE: { label: "Eligible for Drive", className: "phase-voting" },
@@ -45,6 +45,14 @@ export function ReportCard({
     report.status === "ELIGIBLE_AUTHORITY" &&
     !report.reportAuthorities?.some((ra) => ra.status === "CONTACTED");
 
+  // Choose image from imageUrl or first media item
+  const reportImage = report.imageUrl || report.media?.[0] || null;
+
+  // Build location string
+  const locationString = report.city
+    ? `${report.city}${report.region ? `, ${report.region}` : ""}, ${report.country ?? ""}`
+    : "Location TBD";
+
   return (
     <Card className="overflow-hidden transition hover:shadow-lg rounded-2xl">
       <CardHeader className="pb-3">
@@ -59,9 +67,9 @@ export function ReportCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {report.imageUrl && (
+        {reportImage && (
           <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-            <Image src={report.imageUrl} alt={report.title} fill className="object-cover" />
+            <Image src={reportImage} alt={report.title} fill className="object-cover" />
           </div>
         )}
 
@@ -70,7 +78,7 @@ export function ReportCard({
         <div className="space-y-2">
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <MapPin className="h-4 w-4" />
-            <span>Location TBD</span>
+            <span>{locationString}</span>
           </div>
 
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">

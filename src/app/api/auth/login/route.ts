@@ -30,14 +30,13 @@ export async function POST(req: Request) {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { sub: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // --- set cookie + return JSON ---
     const response = NextResponse.json(
-      { message: "Login successful", token },
+      { message: "Login successful" },
       { status: 200 }
     );
 

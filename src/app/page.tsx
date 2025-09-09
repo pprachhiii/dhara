@@ -61,7 +61,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30 transition-smooth shadow-gentle"
                 asChild
               >
-                <Link href="/report/new">
+                <Link href="/reports/new">
                   <span className="inline-flex items-center">
                     <Plus className="h-5 w-5 mr-2" />
                     Submit Report
@@ -149,7 +149,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground">Recent Reports</h2>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/report">View All</Link>
+              <Link href="/reports">View All</Link>
             </Button>
           </div>
 
@@ -168,7 +168,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No reports yet. Be the first to submit one!</p>
                 <Button className="mt-4" asChild>
-                  <Link href="/report/new">Submit First Report</Link>
+                  <Link href="/reports/new">Submit First Report</Link>
                 </Button>
               </Card>
             )}

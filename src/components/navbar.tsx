@@ -12,32 +12,33 @@ export default function Navbar() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ Check login status on mount + whenever path changes
+  // ✅ Check auth from API instead of localStorage
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        setIsLoggedIn(res.ok);
+      } catch {
+        setIsLoggedIn(false);
+      }
+    };
+    checkAuth();
   }, [pathname]);
 
-  // ✅ Also listen to storage changes (multi-tab sync)
-  useEffect(() => {
-    const syncAuth = () => {
-      const token = localStorage.getItem("token");
-      setIsLoggedIn(!!token);
-    };
-
-    window.addEventListener("storage", syncAuth);
-    return () => window.removeEventListener("storage", syncAuth);
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    router.push("/auth/login"); // ✅ redirect to login page, not API
+  // ✅ Logout clears cookie via API
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      setIsLoggedIn(false);
+      router.push("/auth/login");
+    } catch {
+      console.error("Logout failed");
+    }
   };
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/report", label: "Reports", icon: BarChart3 },
+    { href: "/reports", label: "Reports", icon: BarChart3 },
     { href: "/drives", label: "Drives", icon: HardDrive },
   ];
 
@@ -45,7 +46,7 @@ export default function Navbar() {
     <>
       <nav className="w-full bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          {/* Logo / Brand */}
+          {/* Logo */}
           <Link href="/" className="text-2xl font-bold text-blue-600">
             DHARA
           </Link>
@@ -78,7 +79,6 @@ export default function Navbar() {
           <div className="hidden md:flex gap-2 items-center">
             {!isLoggedIn ? (
               <>
-                {/* ✅ Link to PAGES not API */}
                 <Button asChild variant="outline">
                   <Link href="/auth/login">Login</Link>
                 </Button>

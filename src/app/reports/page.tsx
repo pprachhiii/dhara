@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,27 +14,37 @@ import { ReportCard } from "@/components/ReportCard";
 import { useAppStore } from "@/lib/stores";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
-import {
-  ReportStatus,
-  TaskStatus,
-  SocializingLevel,
-} from "@prisma/client";
+import { ReportStatus, TaskStatus, SocializingLevel } from "@prisma/client";
 
 export default function Reports() {
-  const { reports } = useAppStore();
+  const { reports, setReports } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
+
+  // ✅ Fetch reports from API when component mounts
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const res = await fetch("/api/reports");
+        if (!res.ok) throw new Error("Failed to fetch reports");
+        const data: typeof reports = await res.json();
+        setReports(data);
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+      }
+    };
+
+    fetchReports();
+  }, [setReports]);
 
   const filteredReports = reports
     .filter((report) => {
       const matchesSearch =
         report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.description.toLowerCase().includes(searchTerm.toLowerCase());
-
       const matchesStatus =
         statusFilter === "all" || report.status === statusFilter;
-
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
@@ -115,12 +125,11 @@ export default function Reports() {
             Track environmental issues and community initiatives across India
           </p>
         </div>
-
         <Button
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
           asChild
         >
-          <Link href="/report/new">
+          <Link href="/reports/new">
             <Plus className="h-4 w-4 mr-2" /> Submit Report
           </Link>
         </Button>
@@ -233,7 +242,7 @@ export default function Reports() {
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
               asChild
             >
-              <Link href="/report/new">
+              <Link href="/reports/new">
                 <Plus className="h-4 w-4 mr-2" /> Submit First Report
               </Link>
             </Button>
