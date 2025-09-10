@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Home, BarChart3, HardDrive } from "lucide-react";
+import { Home, Users, FileText } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -12,7 +12,6 @@ export default function Navbar() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // ✅ Check auth from API instead of localStorage
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -25,7 +24,6 @@ export default function Navbar() {
     checkAuth();
   }, [pathname]);
 
-  // ✅ Logout clears cookie via API
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -38,8 +36,8 @@ export default function Navbar() {
 
   const navItems = [
     { href: "/", label: "Home", icon: Home },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/drives", label: "Drives", icon: HardDrive },
+    { href: "/reports", label: "Reports", icon: FileText },
+    { href: "/drives", label: "Drives", icon: Users},
   ];
 
   return (

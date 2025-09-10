@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ReportCard } from "@/components/ReportCard";
 import { DriveCard } from "@/components/DriveCard";
-import { FileText, Users, Award, TrendingUp, Plus } from "lucide-react";
-
+import { FileText, Users, Award, TrendingUp, Plus} from "lucide-react";
+import heroImage from '@/../public/hero-community.png';
+import Image from "next/image";
 
 export default async function HomePage(): Promise<React.JSX.Element> {
   const [reports, drives, volunteers] = await Promise.all([
@@ -42,6 +43,14 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       <section className="relative rounded-2xl overflow-hidden shadow-elevated">
         <div className="absolute inset-0">
           <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-blue-600" />
+            <div className="absolute inset-0">
+              <Image
+                src={heroImage} 
+                alt="Community environmental stewardship" 
+                className="w-full h-full object-cover"
+              />
+            <div className="absolute inset-0 hero-gradient opacity-85" />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25" />
         </div>
 
