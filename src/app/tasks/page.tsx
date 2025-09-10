@@ -135,7 +135,7 @@ export default function TasksPage() {
                 </td>
                 <td className="px-4 py-2 border">{t.report?.title ?? "-"}</td>
                 <td className="px-4 py-2 border">{t.drive?.title ?? "-"}</td>
-                <td className="px-4 py-2 border">{t.volunteer?.name ?? "-"}</td>
+                <td className="px-4 py-2 border">{t.volunteer?.user.name ?? "-"}</td>
                 <td className="px-4 py-2 border flex gap-2">
                   <Button size="sm" onClick={() => setSelectedTask(t)}>
                     See
@@ -182,7 +182,7 @@ export default function TasksPage() {
             </p>
             <p>Report: {selectedTask.report?.title ?? "-"}</p>
             <p>Drive: {selectedTask.drive?.title ?? "-"}</p>
-            <p>Volunteer: {selectedTask.volunteer?.name ?? "-"}</p>
+            <p>Volunteer: {selectedTask.volunteer?.user.name ?? "-"}</p>
 
             <div className="mt-6 flex justify-end gap-2">
               <Button
@@ -219,7 +219,9 @@ export default function TasksPage() {
                 id: editingTask.id,
                 status: editingTask.status,
                 comfort: editingTask.comfort,
-                timeSlot: editingTask.timeSlot ?? undefined,
+                timeSlot: editingTask.timeSlot
+                  ? new Date(editingTask.timeSlot).toISOString()
+                  : undefined,
                 reportId: editingTask.reportId ?? undefined,
                 driveId: editingTask.driveId ?? undefined,
                 volunteerId: editingTask.volunteerId ?? undefined,

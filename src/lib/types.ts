@@ -9,10 +9,22 @@ export type ReportStatus =
   | "VOTING_FINALIZED"
   | "IN_PROGRESS"
   | "RESOLVED";
-export type TaskStatus = "OPEN" | "ASSIGNED" | "DONE";
+export enum TaskStatus {
+OPEN="OPEN",
+ASSIGNED= "ASSIGNED", 
+DONE="DONE"
+} 
 export type DriveStatus = "PLANNED" | "VOTING_FINALIZED" | "ONGOING" | "COMPLETED";
-export type SocializingLevel = "SOLO" | "DUAL" | "GROUP";
-export type AuthorityType = "GOVERNMENT" | "NGO" | "OTHERS";
+export enum SocializingLevel {
+  SOLO="SOLO", 
+  DUAL= "DUAL", 
+  GROUP="GROUP"
+}
+export enum AuthorityType {
+  GOVERNMENT = "GOVERNMENT",
+  NGO = "NGO",
+  OTHERS = "OTHERS",
+}
 export type ContactStatus = "PENDING" | "CONTACTED" | "RESPONDED" | "NO_RESPONSE";
 export type BeautifyType = "TREE_PLANTING" | "WALL_PAINTING" | "SIGNAGE" | "CLEANUP" | "OTHER";
 export type MonitoringStatus = "ACTIVE" | "COMPLETED" | "ESCALATED";
