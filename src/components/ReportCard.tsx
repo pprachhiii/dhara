@@ -16,12 +16,14 @@ interface ReportCardProps {
   };
   showVoting?: boolean;
   showAuthorityContact?: boolean;
+  onViewDetails?: () => void; 
 }
 
 export function ReportCard({
   report,
   showVoting = false,
   showAuthorityContact = false,
+  onViewDetails,
 }: ReportCardProps) {
   const { voteOnReport, contactAuthority } = useAppStore();
 
@@ -122,14 +124,18 @@ export function ReportCard({
 
           {showAuthorityContact &&
             report.reportAuthorities?.some((ra) => ra.status === "CONTACTED") && (
-              <div className="flex items-center space-x-2 text-sm text-green-600">
+              <div className="flex items-center space-x-2 text-sm text-green-800">
                 <Phone className="h-4 w-4" />
                 <span>Authority Contacted</span>
               </div>
             )}
 
           {!showVoting && !showAuthorityContact && (
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onViewDetails}
+            >
               View Details
             </Button>
           )}

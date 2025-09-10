@@ -6,13 +6,10 @@ import jwt from "jsonwebtoken";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = body || {};
+    const { email, password } = body;
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
@@ -35,11 +32,7 @@ export async function POST(req: Request) {
       { expiresIn: "1h" }
     );
 
-    const response = NextResponse.json(
-      { message: "Login successful" },
-      { status: 200 }
-    );
-
+    const response = NextResponse.json({ message: "Login successful" }, { status: 200 });
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -49,11 +42,8 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error) {
-    console.error("[LOGIN] Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("[LOGIN] Error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

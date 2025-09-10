@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import ImageKit from "imagekit";
 import { requireAuth } from "@/lib/serverAuth";
 
-export const runtime = "nodejs"; // Important: Node runtime for Buffer
+export const runtime = "nodejs"; // Node runtime needed for Buffer
 
 interface ImageKitUploadResult {
   fileId: string;
@@ -15,6 +15,11 @@ interface ImageKitUploadResult {
   thumbnailUrl?: string;
 }
 
+interface FileLike {
+  name?: string;
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
 const imagekit = new ImageKit({
   publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
@@ -25,6 +30,7 @@ export async function POST(req: NextRequest) {
   try {
     console.log("=== Upload API called ===");
 
+    // --- Auth check ---
     const authResult = await requireAuth(req);
     if (authResult.error || !authResult.user) {
       console.warn("Unauthorized upload attempt");
@@ -32,20 +38,25 @@ export async function POST(req: NextRequest) {
     }
     console.log("Authenticated user:", authResult.user.email);
 
+    // --- Parse file ---
     const formData = await req.formData();
-    const file = formData.get("file");
+    const rawFile = formData.get("file");
 
-    if (!(file instanceof File)) {
+    // Node-compatible type guard
+    const file = rawFile instanceof Blob && "arrayBuffer" in rawFile ? (rawFile as FileLike) : null;
+
+    if (!file) {
       console.log("No valid file received in formData");
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const fileName = file.name || `upload-${Date.now()}`;
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const fileName = file.name || `upload-${Date.now()}`;
 
     console.log("Received file:", fileName, "size:", buffer.length);
 
+    // --- Upload to ImageKit ---
     const upload: ImageKitUploadResult = await new Promise((resolve, reject) => {
       imagekit.upload(
         {
@@ -55,21 +66,7 @@ export async function POST(req: NextRequest) {
           useUniqueFileName: true,
           folder: "/uploads",
         },
-        (
-          err: unknown,
-          result:
-            | {
-                fileId: string;
-                name: string;
-                url: string;
-                height?: number;
-                width?: number;
-                size?: number;
-                fileType?: string;
-                thumbnailUrl?: string;
-              }
-            | undefined
-        ) => {
+        (err, result) => {
           if (err) {
             console.error("ImageKit upload error:", err);
             return reject(err);
@@ -78,7 +75,7 @@ export async function POST(req: NextRequest) {
             console.error("Invalid result from ImageKit:", result);
             return reject(new Error("Invalid result from ImageKit"));
           }
-          resolve(result);
+          resolve(result as ImageKitUploadResult);
         }
       );
     });

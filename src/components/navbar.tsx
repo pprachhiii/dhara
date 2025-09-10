@@ -45,7 +45,7 @@ export default function Navbar() {
       <nav className="w-full bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-blue-600">
+          <Link href="/" className="text-2xl font-bold text-green-800">
             DHARA
           </Link>
 
@@ -59,13 +59,13 @@ export default function Navbar() {
                   href={href}
                   className={`flex items-center gap-2 transition ${
                     isActive
-                      ? "font-semibold text-blue-600"
-                      : "text-gray-700 hover:text-blue-600"
+                      ? "font-semibold text-green-800"
+                      : "text-gray-700 hover:text-green-800"
                   }`}
                 >
                   <Icon
                     size={18}
-                    className={isActive ? "text-blue-600" : "text-gray-500"}
+                    className={isActive ? "text-green-800" : "text-gray-500"}
                   />
                   {label}
                 </Link>

@@ -1,14 +1,13 @@
-import { Context } from "@/lib/context";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ReportStatus } from "@prisma/client";
 import { requireAuth } from "@/lib/serverAuth";
+import { Context } from "@/lib/context"; 
 
 // GET /api/reports/:id (public)
 export async function GET(request: NextRequest, context: Context) {
   try {
-    const { id } = await context.params;
-
+    const { id } = await context.params; 
     const report = await prisma.report.findUnique({
       where: { id },
       include: {
@@ -36,7 +35,7 @@ export async function PATCH(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
 
-    const { id } = await context.params;
+  const { id } = await context.params;
   const data = await request.json();
 
   try {
@@ -45,12 +44,11 @@ export async function PATCH(request: NextRequest, context: Context) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    // Only allow valid fields to be updated
     const updateData: Partial<{
       title: string;
       description: string;
       status: ReportStatus;
-      imageUrl?: string | null;
+      media?: string[];
       latitude?: number | null;
       longitude?: number | null;
       city?: string | null;
@@ -76,7 +74,7 @@ export async function DELETE(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
 
-    const { id } = await context.params;
+  const { id } = await context.params;
 
   try {
     await prisma.task.deleteMany({ where: { reportId: id } });

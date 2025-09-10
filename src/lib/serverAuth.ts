@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 export type AuthResponse = {
   error: boolean;
@@ -8,7 +8,6 @@ export type AuthResponse = {
 };
 
 export async function requireAuth(request: NextRequest): Promise<AuthResponse> {
-  // ✅ Read from cookie first, fallback to Authorization header
   const cookieToken = request.cookies.get("token")?.value;
   const headerToken = request.headers.get("authorization")?.replace("Bearer ", "");
   const token = cookieToken || headerToken;
@@ -20,11 +19,15 @@ export async function requireAuth(request: NextRequest): Promise<AuthResponse> {
     };
   }
 
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as {
-      sub: string;
-      email: string;
+  if (!process.env.JWT_SECRET) {
+    return {
+      error: true,
+      response: NextResponse.json({ error: "Server misconfiguration" }, { status: 500 }),
     };
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload & { sub: string; email: string };
     return {
       error: false,
       user: { id: payload.sub, email: payload.email },
