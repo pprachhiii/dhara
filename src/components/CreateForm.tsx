@@ -24,10 +24,11 @@ interface CreateFormProps {
   onSuccess?: () => void;
 }
 
-const SOCIALIZING_LEVELS: readonly SocializingLevel[] = ["SOLO", "DUAL", "GROUP"];
-const TASK_STATUSES: readonly TaskStatus[] = ["OPEN", "ASSIGNED", "DONE"];
-const AUTHORITY_TYPES: readonly AuthorityType[] = ["GOVERNMENT", "NGO", "OTHERS"];
-const DRIVE_STATUSES: readonly DriveStatus[] = ["PLANNED", "VOTING_FINALIZED", "ONGOING", "COMPLETED"];
+// ✅ Build options from enums
+const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel) as SocializingLevel[];
+const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus) as TaskStatus[];
+const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType) as AuthorityType[];
+const DRIVE_STATUSES: DriveStatus[] = ["PLANNED", "VOTING_FINALIZED", "ONGOING", "COMPLETED"];
 
 interface Field {
   name: string;
@@ -92,7 +93,6 @@ export default function CreateForm({
   const handleChange = (name: string, value: string | number) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,8 +170,6 @@ export default function CreateForm({
             </select>
           );
         }
-
-        
 
         return (
           <Input

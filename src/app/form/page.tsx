@@ -1,60 +1,70 @@
-// "use client";
+"use client";
 
-// import { Suspense, useEffect, useState } from "react";
-// import { useSearchParams, useRouter } from "next/navigation";
-// import { toast } from "react-hot-toast";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import CreateForm from "@/components/CreateForm"; // ✅ adjust path if different
 
-// type ModelType = "Task" | "Drive" | "Authority";
+type ModelType = "Task" | "Drive" | "Authority";
 
-// function FormContent() {
-//   const searchParams = useSearchParams();
-//   const router = useRouter();
-//   const queryModel = (searchParams.get("model") as ModelType) || "Report";
+function FormContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const queryModel = (searchParams.get("model") as ModelType) || "Task"; // default to Task
 
-//   const [model, setModel] = useState<ModelType>(queryModel);
-//   const [userId, setUserId] = useState<string | null>(null);
-//   const [loading, setLoading] = useState(true);
+  const [model, setModel] = useState<ModelType>(queryModel);
+  const [loading, setLoading] = useState(true);
 
-//   // Check user login and set userId
-//   useEffect(() => {
-//     const checkAuth = async () => {
-//       try {
-//         const res = await fetch("/api/auth/me", { credentials: "include" });
-//         if (!res.ok) {
-//           toast.error("You must be logged in to submit a report");
-//           router.push("/auth/login");
-//           return;
-//         }
+  // ✅ Check user login and set userId
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (!res.ok) {
+          toast.error("You must be logged in to submit a form");
+          router.push("/auth/login");
+          return;
+        }
 
-//         const data = await res.json();
-//         setUserId(data.user.id); // set actual logged-in user id
-//       } catch (err) {
-//         console.error("Auth check failed:", err);
-//         toast.error("Session expired, please login again.");
-//         router.push("/auth/login");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        toast.error("Session expired, please login again.");
+        router.push("/auth/login");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-//     checkAuth();
-//   }, [router]);
+    checkAuth();
+  }, [router]);
 
+  // ✅ Sync model with query param
+  useEffect(() => {
+    const urlModel = (searchParams.get("model") as ModelType) || "Task";
+    setModel(urlModel);
+  }, [searchParams]);
 
-//   // Sync model with URL query param
-//   useEffect(() => {
-//     const urlModel = (searchParams.get("model") as ModelType) || "Report";
-//     setModel(urlModel);
-//   }, [searchParams]);
+  if (loading) return <div>Loading...</div>;
 
-//   if (loading) return <div>Loading...</div>;
+  return (
+    <div className="p-4">
+      <CreateForm
+        model={model}
+        initialValues={{}}
+        disableFields={[]}
+        onSuccess={() => {
+          toast.success(`${model} created successfully!`);
+          router.push(`/${model.toLowerCase()}`);
+        }}
+      />
+    </div>
+  );
+}
 
-// }
-
-// export default function FormPage() {
-//   return (
-//     <Suspense fallback={<div>Loading form...</div>}>
-//       <FormContent />
-//     </Suspense>
-//   );
-// }
+export default function FormPage() {
+  return (
+    <Suspense fallback={<div>Loading form...</div>}>
+      <FormContent />
+    </Suspense>
+  );
+}
