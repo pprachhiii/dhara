@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token") || "";
@@ -18,13 +18,13 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     if (!token) {
       toast.error("Invalid or missing token");
-      setIsTokenValid(false); // disable form if token is missing
+      setIsTokenValid(false);
     }
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isTokenValid) return; // prevent submission if token invalid
+    if (!isTokenValid) return;
 
     setLoading(true);
 
@@ -40,13 +40,13 @@ export default function ResetPasswordPage() {
       if (!res.ok) {
         const errorMessage = typeof data.error === "string" ? data.error : "Something went wrong";
         toast.error(errorMessage);
-        // Disable form if token expired or invalid
+
         if (errorMessage.toLowerCase().includes("invalid") || errorMessage.toLowerCase().includes("expired")) {
           setIsTokenValid(false);
         }
       } else {
         toast.success(data.message || "Password reset successfully");
-        router.push("/api/auth/login"); 
+        router.push("/api/auth/login");
       }
     } finally {
       setLoading(false);
@@ -71,5 +71,13 @@ export default function ResetPasswordPage() {
         {loading ? "Resetting..." : "Reset Password"}
       </Button>
     </form>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading reset form...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
