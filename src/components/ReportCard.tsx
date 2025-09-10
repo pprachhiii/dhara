@@ -26,7 +26,6 @@ export function ReportCard({
   const getStatusBadge = (status: ReportStatus) => {
     const statusConfig: Record<ReportStatus, { label: string; className: string }> = {
       PENDING: { label: "Pending", className: "phase-pending" },
-      ELIGIBLE_AUTHORITY: { label: "Eligible for Authority Contact", className: "phase-voting" },
       AUTHORITY_CONTACTED: { label: "Authority Contacted", className: "phase-progress" },
       ELIGIBLE_DRIVE: { label: "Eligible for Drive", className: "phase-voting" },
       VOTING_FINALIZED: { label: "Voting Finalized", className: "phase-progress" },
@@ -111,16 +110,7 @@ export function ReportCard({
                     Contact Authority
                   </Button>
                 );
-              case "ELIGIBLE_AUTHORITY":
-                return (
-                  <Button
-                    className="bg-red-500 hover:bg-red-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/authority")}
-                  >
-                    Contact Authority
-                  </Button>
-                );
-
+              
               // Phase 2: Authority Contacted
               case "AUTHORITY_CONTACTED":
                 if (new Date(report.updatedAt) <= sevenDaysAgo && votesCount > 10) {

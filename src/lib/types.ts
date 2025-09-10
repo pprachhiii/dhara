@@ -3,7 +3,6 @@
 export type UserRole = "USER" | "VOLUNTEER";
 export type ReportStatus =
   | "PENDING"
-  | "ELIGIBLE_AUTHORITY"
   | "AUTHORITY_CONTACTED"
   | "ELIGIBLE_DRIVE"
   | "VOTING_FINALIZED"

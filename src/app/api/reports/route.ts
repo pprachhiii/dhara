@@ -49,8 +49,7 @@ export async function GET(request: NextRequest) {
     let escalationType: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null = null;
 
     if (
-      report.status === ReportStatus.PENDING ||
-      report.status === ReportStatus.ELIGIBLE_AUTHORITY
+      report.status === ReportStatus.PENDING
     ) {
       escalationType = "CONTACT_AUTHORITY";
     }

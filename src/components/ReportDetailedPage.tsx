@@ -81,7 +81,6 @@ export function ReportDetailPage({ report, onClose }: ReportDetailPageProps) {
               className="border border-border rounded px-2 py-1 text-sm"
             >
               <option value="PENDING">PENDING</option>
-              <option value="ELIGIBLE_AUTHORITY">ELIGIBLE_AUTHORITY</option>
               <option value="AUTHORITY_CONTACTED">AUTHORITY_CONTACTED</option>
               <option value="ELIGIBLE_DRIVE">ELIGIBLE_DRIVE</option>
               <option value="VOTING_FINALIZED">VOTING_FINALIZED</option>
