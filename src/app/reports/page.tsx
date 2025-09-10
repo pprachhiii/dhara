@@ -72,6 +72,8 @@ export default function Reports() {
     })),
     tasks: report.tasks?.map((t) => ({
       id: t.id,
+      title: t.title,
+      description: t.description,
       volunteerId: t.volunteerId ?? null,
       reportId: t.reportId,
       report: t.report,

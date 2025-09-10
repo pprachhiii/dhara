@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, X, FileText, Send } from "lucide-react";
+import { Upload, X, FileText, Send, Camera } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface NominatimAddress {
@@ -226,10 +226,21 @@ export default function ReportForm({ reportId }: ReportFormProps) {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto forest-gradient rounded-full flex items-center justify-center">
+            <FileText className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground"><span>{isEdit ? "Edit Report" : "Submit New Report"}</span></h1>
+            <p className="text-muted-foreground">
+              Help improve your community by reporting environmental issues
+            </p>
+          </div>
+        </div>
       <Card className="shadow-elevated">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FileText className="h-5 w-5" />
+            <Camera className="h-5 w-5" />
             <span>{isEdit ? "Edit Report" : "Submit New Report"}</span>
           </CardTitle>
         </CardHeader>
@@ -394,6 +405,19 @@ export default function ReportForm({ reportId }: ReportFormProps) {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+      <Card className="bg-muted/20 border-accent/20">
+        <CardContent className="pt-6">
+          <div className="flex items-start space-x-3">
+            <div className="w-2 h-2 rounded-full bg-accent mt-2" />
+            <div>
+              <h3 className="font-medium text-foreground mb-1">What happens next?</h3>
+              <p className="text-sm text-muted-foreground">
+                Your report will go through a community review process. After 7 days, it becomes eligible for authority contact, followed by community voting if needed. The community will work together to address the issue through organized drives.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

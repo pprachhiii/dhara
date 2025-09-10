@@ -107,6 +107,8 @@ model Drive {
 }
 
 model DriveReport {
+  title       String
+  description String?
   id        String   @id @default(cuid())
   driveId   String
   drive     Drive    @relation(fields: [driveId], references: [id])

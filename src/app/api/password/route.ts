@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       if (!user) return NextResponse.json({ error: "No user found with this email" }, { status: 404 });
 
       const resetToken = generateResetToken();
-      const resetTokenExpiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+      const resetTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 ); //1 hour
 
       await prisma.user.update({
         where: { email },

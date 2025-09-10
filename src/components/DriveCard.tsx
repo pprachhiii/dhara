@@ -9,6 +9,9 @@ interface DriveCardProps {
   drive: Drive;
   showVoting?: boolean;
   showSignup?: boolean;
+  showRegister?: boolean;        // For upcoming drives
+  showParticipation?: boolean;  
+  showSummary?: boolean;
 }
 
 export function DriveCard({ drive, showVoting = true, showSignup = false }: DriveCardProps) {

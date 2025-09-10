@@ -10,9 +10,9 @@ export type ReportStatus =
   | "IN_PROGRESS"
   | "RESOLVED";
 export enum TaskStatus {
-OPEN="OPEN",
-ASSIGNED= "ASSIGNED", 
-DONE="DONE"
+  OPEN="OPEN",
+  ASSIGNED= "ASSIGNED", 
+  DONE="DONE"
 } 
 export type DriveStatus = "PLANNED" | "VOTING_FINALIZED" | "ONGOING" | "COMPLETED";
 export enum SocializingLevel {
@@ -139,6 +139,8 @@ export interface DriveVote {
 
 export interface Task {
   id: string;
+  title: string;
+  description?: string | null;
   reportId: string;
   report: Report;
   driveId?: string | null;
