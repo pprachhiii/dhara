@@ -15,20 +15,24 @@ import { useAppStore } from "@/lib/stores";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { ReportStatus, TaskStatus, SocializingLevel } from "@prisma/client";
+import { ReportDetailPage } from "@/components/ReportDetailedPage";
+import { Report } from "@/lib/types";
 
 export default function Reports() {
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
   const { reports, setReports } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
 
-  // ✅ Fetch reports from API when component mounts
+  // Fetch reports from API
   useEffect(() => {
     const fetchReports = async () => {
       try {
         const res = await fetch("/api/reports");
         if (!res.ok) throw new Error("Failed to fetch reports");
-        const data: typeof reports = await res.json();
+        const data: Report[] = await res.json();
         setReports(data);
       } catch (err) {
         console.error("Error fetching reports:", err);
@@ -60,7 +64,7 @@ export default function Reports() {
       }
     });
 
-  const mapReportForCard = (report: typeof reports[number]) => ({
+  const mapReportForCard = (report: Report) => ({
     ...report,
     votes: report.votes?.map((v) => ({
       id: v.id,
@@ -101,21 +105,13 @@ export default function Reports() {
     })),
   });
 
-  const votingReports = filteredReports
-    .filter((r) => r.status === ReportStatus.ELIGIBLE_DRIVE)
-    .map(mapReportForCard);
-
-  const authorityContactReports = filteredReports
-    .filter((r) => r.status === ReportStatus.ELIGIBLE_AUTHORITY)
-    .map(mapReportForCard);
-
-  const otherReports = filteredReports
-    .filter(
-      (r) =>
-        r.status !== ReportStatus.ELIGIBLE_DRIVE &&
-        r.status !== ReportStatus.ELIGIBLE_AUTHORITY
-    )
-    .map(mapReportForCard);
+  const votingReports = filteredReports.filter(
+    (r) => r.status === ReportStatus.ELIGIBLE_DRIVE
+  );
+  const authorityContactReports = filteredReports;
+  const otherReports = filteredReports.filter(
+    (r) => r.status !== ReportStatus.ELIGIBLE_DRIVE
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -187,7 +183,12 @@ export default function Reports() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {votingReports.map((report) => (
-              <ReportCard key={report.id} report={report} showVoting />
+              <ReportCard
+                key={report.id}
+                report={mapReportForCard(report)}
+                showVoting
+                onViewDetails={() => setSelectedReport(report)}
+              />
             ))}
           </div>
         </div>
@@ -205,7 +206,12 @@ export default function Reports() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {authorityContactReports.map((report) => (
-              <ReportCard key={report.id} report={report} showAuthorityContact />
+              <ReportCard
+                key={report.id}
+                report={mapReportForCard(report)}
+                showAuthorityContact
+                onViewDetails={() => setSelectedReport(report)}
+              />
             ))}
           </div>
         </div>
@@ -219,7 +225,11 @@ export default function Reports() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {otherReports.map((report) => (
-              <ReportCard key={report.id} report={report} />
+              <ReportCard
+                key={report.id}
+                report={mapReportForCard(report)}
+                onViewDetails={() => setSelectedReport(report)}
+              />
             ))}
           </div>
         </div>
@@ -250,6 +260,21 @@ export default function Reports() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Overlay: FIXED */}
+      {selectedReport && (
+        <ReportDetailPage
+          report={{
+            ...selectedReport,
+            reporter: selectedReport.reporter ?? {
+              id: "unknown",
+              email: "Unknown",
+              role: "USER",
+            },
+          }}
+          onClose={() => setSelectedReport(null)}
+        />
       )}
     </div>
   );

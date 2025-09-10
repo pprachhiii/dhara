@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Use driveVote model instead of vote
     const existing = await prisma.driveVote.findFirst({
       where: { userId, driveId },
     });

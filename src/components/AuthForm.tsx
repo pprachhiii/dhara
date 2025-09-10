@@ -36,7 +36,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-        credentials: "include", // ✅ include cookie
+        credentials: "include", 
       });
 
       let result: AuthResponse = {};
@@ -53,10 +53,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       if (mode === "register") {
         toast.success("Account created! You are now logged in.");
-        router.push("/"); // ✅ auto-login, redirect home
+        router.push("/"); 
       } else {
         toast.success("Login successful!");
-        router.push("/"); // ✅ cookie already set
+        router.push("/"); 
       }
     } catch (err) {
       console.error(err);

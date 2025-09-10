@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,10 @@ interface TaskForm {
 
 export default function NewDrive() {
   const router = useRouter();
-  const { proposeDrive, reports } = useAppStore();
+  const { proposeDrive, reports, fetchReports } = useAppStore();
+  useEffect(() => {
+    fetchReports(); 
+  }, [fetchReports]);
 
   const [formData, setFormData] = useState<DriveFormData>({
     title: '',
@@ -51,7 +54,7 @@ export default function NewDrive() {
 
   // Eligible reports for linking
   const eligibleReports = reports.filter(
-    (r) => r.status === "PENDING" || r.status === "IN_PROGRESS"
+    (r) => r.status === "ELIGIBLE_DRIVE"
   );
 
   const handleInputChange = (field: keyof DriveFormData, value: string) => {
@@ -143,6 +146,11 @@ export default function NewDrive() {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+console.log("Reports from store:", reports.map(r => ({
+  id: r.id,
+  title: r.title,
+  status: r.status
+})));
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">

@@ -14,7 +14,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Check if user already voted
     const existing = await prisma.reportVote.findFirst({
       where: { userId, reportId },
     });
@@ -25,7 +24,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Fetch report
     const report = await prisma.report.findUnique({ where: { id: reportId } });
     if (!report) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
@@ -33,7 +31,6 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
 
-    // ✅ Initialize voting window if not set
     if (!report.votingOpenAt) {
       await prisma.report.update({
         where: { id: reportId },
@@ -45,7 +42,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ✅ Check if voting window is open
     if (report.votingCloseAt && now > report.votingCloseAt) {
       return NextResponse.json(
         { error: "Voting for this report has ended" },
@@ -53,16 +49,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Create vote
     const vote = await prisma.reportVote.create({
       data: { userId, reportId },
     });
 
-    // ✅ Count votes and check if voting ended
     const voteCount = await prisma.reportVote.count({ where: { reportId } });
 
-    // Optional: Threshold logic to move to IN_PROGRESS
-    const VOTE_THRESHOLD = 3; // Example, adjust as needed
+    const VOTE_THRESHOLD = 3; 
     if (voteCount >= VOTE_THRESHOLD && report.status !== "IN_PROGRESS") {
       await prisma.report.update({
         where: { id: reportId },

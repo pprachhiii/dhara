@@ -44,10 +44,11 @@ export async function PATCH(request: NextRequest, context: Context) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    const updateData: Partial<{
-      title: string;
-      description: string;
-      status: ReportStatus;
+    // Whitelist fields allowed for update
+    const updateData: {
+      title?: string;
+      description?: string;
+      status?: ReportStatus;
       media?: string[];
       latitude?: number | null;
       longitude?: number | null;
@@ -55,7 +56,25 @@ export async function PATCH(request: NextRequest, context: Context) {
       region?: string | null;
       country?: string | null;
       pinCode?: string | null;
-    }> = { ...data };
+    } = {};
+
+    if (typeof data.title === "string") updateData.title = data.title.trim();
+    if (typeof data.description === "string") updateData.description = data.description.trim();
+
+    if (data.status) {
+      if (!Object.values(ReportStatus).includes(data.status)) {
+        return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
+      }
+      updateData.status = data.status as ReportStatus;
+    }
+
+    if (Array.isArray(data.media)) updateData.media = data.media;
+    if (typeof data.latitude === "number" || data.latitude === null) updateData.latitude = data.latitude;
+    if (typeof data.longitude === "number" || data.longitude === null) updateData.longitude = data.longitude;
+    if (typeof data.city === "string" || data.city === null) updateData.city = data.city;
+    if (typeof data.region === "string" || data.region === null) updateData.region = data.region;
+    if (typeof data.country === "string" || data.country === null) updateData.country = data.country;
+    if (typeof data.pinCode === "string" || data.pinCode === null) updateData.pinCode = data.pinCode;
 
     const updatedReport = await prisma.report.update({
       where: { id },
@@ -64,10 +83,11 @@ export async function PATCH(request: NextRequest, context: Context) {
 
     return NextResponse.json(updatedReport);
   } catch (err) {
-    console.error(err);
+    console.error("PATCH /api/reports/:id error:", err);
     return NextResponse.json({ error: "Failed to update report" }, { status: 500 });
   }
 }
+
 
 // DELETE /api/reports/:id (protected)
 export async function DELETE(request: NextRequest, context: Context) {

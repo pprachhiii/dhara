@@ -24,7 +24,6 @@ interface CreateFormProps {
   onSuccess?: () => void;
 }
 
-// ✅ Build options from enums
 const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel) as SocializingLevel[];
 const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus) as TaskStatus[];
 const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType) as AuthorityType[];

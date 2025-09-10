@@ -113,7 +113,6 @@ export default function ReportForm({ reportId }: ReportFormProps) {
     return () => controller.abort();
   }, [cityQuery]);
 
-  // ✅ When user selects a city
   const handleCitySelect = (c: NominatimResult) => {
     setFormData({
       ...formData,
@@ -126,7 +125,6 @@ export default function ReportForm({ reportId }: ReportFormProps) {
     setCityQuery(c.display_name);
   };
 
-  // ✅ Validate pinCode
   const validatePin = async () => {
     if (!formData.city || !formData.country || !formData.pinCode) return;
     try {
@@ -206,7 +204,7 @@ export default function ReportForm({ reportId }: ReportFormProps) {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-          credentials: "include", // ✅ send cookie automatically
+          credentials: "include",
         }
       );
 
