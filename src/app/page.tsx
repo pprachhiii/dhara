@@ -6,7 +6,7 @@ export default async function HomePage() {
   const [reports, drives, volunteers] = await Promise.all([
     prisma.report.findMany({ include: { reporter: true } }),
     prisma.drive.findMany(),
-    prisma.volunteer.findMany({ include: { user: true } }), // ✅ FIX HERE
+    prisma.volunteer.findMany({ include: { user: true } }),
   ]);
 
   return (
