@@ -12,20 +12,53 @@ import {
   AuthorityType,
 } from "@/lib/types";
 
+// ------------ Types ------------
 type ModelType = "Task" | "Authority" | "Volunteer";
-type FormState = Record<string, string | number | undefined>;
 
-interface CreateFormProps {
+// Specific form types
+interface VolunteerForm {
+  id?: string;
+  userId: string;
+  phone: string;
+}
+
+interface TaskForm {
+  id?: string;
+  reportId: string;
+  driveId: string;
+  volunteerId: string;
+  comfort: SocializingLevel;
+  status: TaskStatus;
+  timeSlot: string | Date;
+}
+
+interface AuthorityForm {
+  id?: string;
+  name: string;
+  type: AuthorityType;
+  city: string;
+  region: string;
+  email: string;
+  phone: string;
+  website?: string;
+  active: boolean | string; // string for select, normalized before submit
+}
+
+// Union type
+type FormState = VolunteerForm | TaskForm | AuthorityForm;
+
+interface CreateFormProps<T extends FormState> {
   model: ModelType;
-  initialValues?: FormState;
-  disableFields?: string[];
+  initialValues?: Partial<T>;
+  disableFields?: (keyof T)[];
   onClose?: () => void;
   onSuccess?: () => void;
 }
 
-const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel) as SocializingLevel[];
-const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus) as TaskStatus[];
-const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType) as AuthorityType[];
+// ------------ Constants ------------
+const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel);
+const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus);
+const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType);
 
 interface Field {
   name: string;
@@ -34,21 +67,29 @@ interface Field {
   options?: readonly string[];
 }
 
-export default function CreateForm({
+// ------------ Component ------------
+export default function CreateForm<T extends FormState>({
   model,
-  initialValues = {},
+  initialValues = {} as Partial<T>,
   disableFields = [],
   onClose,
   onSuccess,
-}: CreateFormProps) {
+}: CreateFormProps<T>) {
   const router = useRouter();
-  const [form, setForm] = useState<FormState>({ ...initialValues });
+  const [form, setForm] = useState<Partial<T>>({ ...initialValues });
 
   useEffect(() => {
     setForm({ ...initialValues });
   }, [initialValues, model]);
 
   const isEdit = Boolean(initialValues?.id);
+
+  // Format dates for datetime-local inputs
+  const formatDateTime = (date: string | Date | undefined) => {
+    if (!date) return "";
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+  };
 
   const getFields = (): Field[] => {
     switch (model) {
@@ -62,9 +103,23 @@ export default function CreateForm({
           { name: "reportId", label: "Report ID", type: "text" },
           { name: "driveId", label: "Drive ID", type: "text" },
           { name: "volunteerId", label: "Volunteer ID", type: "text" },
-          { name: "comfort", label: "Comfort Level", type: "select", options: SOCIALIZING_LEVELS },
-          { name: "status", label: "Status", type: "select", options: TASK_STATUSES },
-          { name: "timeSlot", label: "Time Slot (DateTime)", type: "datetime-local" },
+          {
+            name: "comfort",
+            label: "Comfort Level",
+            type: "select",
+            options: SOCIALIZING_LEVELS,
+          },
+          {
+            name: "status",
+            label: "Status",
+            type: "select",
+            options: TASK_STATUSES,
+          },
+          {
+            name: "timeSlot",
+            label: "Time Slot (DateTime)",
+            type: "datetime-local",
+          },
         ];
       case "Authority":
         return [
@@ -83,23 +138,41 @@ export default function CreateForm({
   };
 
   const handleChange = (name: string, value: string | number) => {
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const endpointMap: Record<ModelType, string> = {
-      Volunteer: isEdit ? `/api/volunteers/${initialValues?.id}` : "/api/volunteers",
+      Volunteer: isEdit
+        ? `/api/volunteers/${initialValues?.id}`
+        : "/api/volunteers",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
-      Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
+      Authority: isEdit
+        ? `/api/authority/${initialValues?.id}`
+        : "/api/authority",
     };
+
+    // Prepare form data before sending
+    const submitData: Record<string, unknown> = { ...form };
+
+    // Convert boolean
+    if ("active" in submitData) {
+      submitData.active =
+        submitData.active === "true" || submitData.active === true;
+    }
+
+    // Convert datetime-local back to Date
+    if ("timeSlot" in submitData && submitData.timeSlot) {
+      submitData.timeSlot = new Date(submitData.timeSlot as string);
+    }
 
     try {
       const res = await fetch(endpointMap[model], {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(submitData),
       });
 
       if (!res.ok) {
@@ -129,17 +202,17 @@ export default function CreateForm({
         {isEdit ? `Edit ${model}` : `Create ${model}`}
       </h1>
 
-      {fields.map(field => {
-        const value = form[field.name] ?? "";
+      {fields.map((field) => {
+        const value = form[field.name as keyof T] ?? "";
 
         if (field.type === "textarea") {
           return (
             <Textarea
               key={field.name}
               placeholder={field.label}
-              value={value as string}
-              onChange={e => handleChange(field.name, e.target.value)}
-              disabled={disableFields.includes(field.name)}
+              value={String(value)}
+              onChange={(e) => handleChange(field.name, e.target.value)}
+              disabled={disableFields.includes(field.name as keyof T)}
             />
           );
         }
@@ -148,13 +221,13 @@ export default function CreateForm({
           return (
             <select
               key={field.name}
-              value={value as string}
-              onChange={e => handleChange(field.name, e.target.value)}
+              value={String(value)}
+              onChange={(e) => handleChange(field.name, e.target.value)}
               className="border p-2 rounded w-full"
-              disabled={disableFields.includes(field.name)}
+              disabled={disableFields.includes(field.name as keyof T)}
             >
               <option value="">Select {field.label}</option>
-              {field.options?.map(opt => (
+              {field.options?.map((opt) => (
                 <option key={opt} value={opt}>
                   {opt}
                 </option>
@@ -168,9 +241,13 @@ export default function CreateForm({
             key={field.name}
             type={field.type}
             placeholder={field.label}
-            value={value}
-            disabled={disableFields.includes(field.name)}
-            onChange={e =>
+            value={
+              field.type === "datetime-local"
+                ? formatDateTime(value as string | Date)
+                : String(value)
+            }
+            disabled={disableFields.includes(field.name as keyof T)}
+            onChange={(e) =>
               handleChange(
                 field.name,
                 field.type === "number" ? Number(e.target.value) : e.target.value
@@ -185,7 +262,12 @@ export default function CreateForm({
           {isEdit ? "Update" : "Submit"} {model}
         </Button>
         {onClose && (
-          <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            onClick={onClose}
+          >
             Cancel
           </Button>
         )}

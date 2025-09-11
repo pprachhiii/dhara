@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, context: Context) {
 }
 
 // PUT /api/authority/:id → update authority (requires auth)
-export async function PUT(request: NextRequest, context: Context) {
+export async function PATCH(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
 

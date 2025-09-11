@@ -71,7 +71,6 @@ export async function DELETE(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
-    // Optional: add logic to restrict who can delete (admin only or task owner)
     await prisma.task.delete({ where: { id } });
 
     return NextResponse.json({ message: "Task deleted successfully" });
