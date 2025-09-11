@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TaskStatus, SocializingLevel } from "@prisma/client";
+import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/tasks
+type AuthResponse = {
+  error: boolean;
+  user?: { id: string; email: string };
+  response?: NextResponse;
+};
+
+// GET /api/tasks (public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const statusParam = url.searchParams.get("status");
@@ -40,8 +47,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/tasks
+// POST /api/tasks (protected)
 export async function POST(req: NextRequest) {
+  const authResult = (await requireAuth(req)) as AuthResponse;
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const data = await req.json();
 
@@ -71,3 +81,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
   }
 }
+

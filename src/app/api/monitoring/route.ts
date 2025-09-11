@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MonitoringStatus } from "@prisma/client";
+import { requireAuth } from "@/lib/serverAuth";
 
+// ---------------- PUBLIC ----------------
 // GET /api/monitoring → list all monitorings
 export async function GET() {
   try {
@@ -19,9 +21,12 @@ export async function GET() {
   }
 }
 
+// ---------------- AUTH REQUIRED ----------------
 // POST /api/monitoring → start new monitoring
-// Body: { driveId?: string, reportId?: string, checkDate: string, notes?: string }
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error || !auth.user) return auth.response!;
+
   try {
     const { driveId, reportId, checkDate, notes } = await req.json();
 
@@ -44,3 +49,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to start monitoring" }, { status: 500 });
   }
 }
+

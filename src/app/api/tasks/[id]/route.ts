@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
 import { TaskStatus, SocializingLevel } from "@prisma/client";
+import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/tasks/:id
+// GET /api/tasks/:id (public for now)
 export async function GET(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
@@ -28,8 +29,11 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PATCH /api/tasks/:id
+// PATCH /api/tasks/:id (requires auth)
 export async function PATCH(request: NextRequest, context: Context) {
+  const authResult = await requireAuth(request);
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const { id } = await context.params;
     const data = await request.json();
@@ -38,13 +42,9 @@ export async function PATCH(request: NextRequest, context: Context) {
       where: { id },
       data: {
         volunteerId: data.volunteerId ?? undefined,
-        comfort: data.comfort
-          ? (data.comfort as SocializingLevel)
-          : undefined,
+        comfort: data.comfort ? (data.comfort as SocializingLevel) : undefined,
         timeSlot: data.timeSlot ? new Date(data.timeSlot) : undefined,
-        status: data.status
-          ? (data.status as TaskStatus)
-          : undefined,
+        status: data.status ? (data.status as TaskStatus) : undefined,
       },
       include: {
         report: true,
@@ -63,11 +63,17 @@ export async function PATCH(request: NextRequest, context: Context) {
   }
 }
 
-// DELETE /api/tasks/:id
+// DELETE /api/tasks/:id (requires auth)
 export async function DELETE(request: NextRequest, context: Context) {
+  const authResult = await requireAuth(request);
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const { id } = await context.params;
+
+    // Optional: add logic to restrict who can delete (admin only or task owner)
     await prisma.task.delete({ where: { id } });
+
     return NextResponse.json({ message: "Task deleted successfully" });
   } catch (err) {
     console.error("Error deleting task:", err);

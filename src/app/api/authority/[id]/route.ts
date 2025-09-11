@@ -2,30 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AuthorityType } from "@prisma/client";
 import { Context } from "@/lib/context";
+import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/authority/:id
-export async function GET(
-  request: NextRequest,
-  context: Context
-) {
+// GET /api/authority/:id (can be public)
+export async function GET(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
     const authority = await prisma.authority.findUnique({
       where: { id },
-      include: {
-        reportAuthorities: {
-          include: {
-            report: true, // also fetch reports linked to this authority
-          },
-        },
-      },
+      include: { reportAuthorities: { include: { report: true } } },
     });
 
-    if (!authority) {
-      return NextResponse.json({ error: "Authority not found" }, { status: 404 });
-    }
-
+    if (!authority) return NextResponse.json({ error: "Authority not found" }, { status: 404 });
     return NextResponse.json(authority);
   } catch (err) {
     console.error("Error fetching authority:", err);
@@ -33,16 +22,15 @@ export async function GET(
   }
 }
 
-// PUT /api/authority/:id
-export async function PUT(
-  request: NextRequest,
-  context: Context
-) {
+// PUT /api/authority/:id → update authority (requires auth)
+export async function PUT(request: NextRequest, context: Context) {
+  const authResult = await requireAuth(request);
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const { id } = await context.params;
     const data = await request.json();
 
-    // Validate AuthorityType if provided
     if (data.type && !Object.values(AuthorityType).includes(data.type)) {
       return NextResponse.json({ error: "Invalid authority type" }, { status: 400 });
     }
@@ -61,25 +49,21 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({
-      message: "Authority updated successfully",
-      authority: updatedAuthority,
-    });
+    return NextResponse.json({ message: "Authority updated successfully", authority: updatedAuthority });
   } catch (err) {
     console.error("Error updating authority:", err);
     return NextResponse.json({ error: "Authority not found" }, { status: 404 });
   }
 }
 
-// DELETE /api/authority/:id
-export async function DELETE(
-  request: NextRequest,
-  context: Context
-) {
+// DELETE /api/authority/:id → delete authority (requires auth)
+export async function DELETE(request: NextRequest, context: Context) {
+  const authResult = await requireAuth(request);
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const { id } = await context.params;
 
-    // Hard delete (⚠️ irreversible)
     await prisma.authority.delete({ where: { id } });
 
     return NextResponse.json({ message: "Authority deleted successfully" });

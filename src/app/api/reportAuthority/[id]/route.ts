@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
 
-// GET /api/reportAuthorities/:id
+// GET /api/reportAuthorities/:id → PUBLIC
 export async function GET(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
@@ -28,5 +28,3 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
 }
-
-// Add import

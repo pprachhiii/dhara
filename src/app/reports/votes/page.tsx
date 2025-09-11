@@ -1,132 +1,214 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAppStore } from "@/lib/stores";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import toast from "react-hot-toast";
-import { Report, Discussion } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Heart, MapPin, Calendar, User } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Report } from "@/lib/types";
+import Image from "next/image";
 
-type ReportWithExtras = Report & {
-  voteCount?: number;
-};
+const VotingReports = () => {
+  const { reports, voteOnReport } = useAppStore();
+  // not used yet, so prefix with _ to satisfy eslint
+  const [_selectedReport, _setSelectedReport] = useState<Report | null>(null);
 
-export default function ReportsVotingPage() {
-  const [reports, setReports] = useState<ReportWithExtras[]>([]);
-  const [discussions, setDiscussions] = useState<Discussion[]>([]);
-  const [comment, setComment] = useState("");
+  // Reports eligible for voting
+  const votingEligibleReports = reports.filter(
+    (report: Report) =>
+      report.status === "PENDING" || report.status === "ELIGIBLE_DRIVE"
+  );
 
-  // Fetch reports and discussions
-  useEffect(() => {
-    fetchReports();
-    fetchDiscussions();
-  }, []);
+  // Top 3 by vote count (safe with ?? 0)
+  const topReports = [...votingEligibleReports]
+    .sort((a, b) => (b.votes?.length ?? 0) - (a.votes?.length ?? 0))
+    .slice(0, 3);
 
-  async function fetchReports() {
-    try {
-      const data: ReportWithExtras[] = await fetch("/api/reports").then(res => res.json());
-      setReports(data);
-    } catch {
-      toast.error("Failed to load reports");
-    }
-  }
+  const handleVote = (reportId: string) => {
+    voteOnReport(reportId);
+  };
 
-  async function fetchDiscussions() {
-    try {
-      const data: Discussion[] = await fetch("/api/discussion?phase=REPORT_VOTING").then(res => res.json());
-      setDiscussions(data);
-    } catch {
-      toast.error("Failed to load discussions");
-    }
-  }
-
-  // Vote handler
-  async function handleVote(reportId: string) {
-    try {
-      const res = await fetch("/api/votes/reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "demo-user", reportId }),
-      });
-
-      if (res.ok) {
-        toast.success("Vote submitted!");
-        await fetchReports();
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Vote failed");
-      }
-    } catch {
-      toast.error("Vote failed");
-    }
-  }
-
-  // Add discussion comment
-  async function handleAddComment() {
-    if (!comment.trim()) return;
-    try {
-      const res = await fetch("/api/discussion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: "demo-user", phase: "REPORT_VOTING", content: comment }),
-      });
-
-      if (res.ok) {
-        setComment("");
-        await fetchDiscussions();
-      } else {
-        toast.error("Failed to add comment");
-      }
-    } catch {
-      toast.error("Failed to add comment");
-    }
-  }
+  const ReportDetails = ({ report }: { report: Report }) => (
+    <div className="space-y-4">
+      {report.media && report.media.length > 0 && (
+        <div className="aspect-video w-full overflow-hidden rounded-lg">
+          <Image
+            src={report.media[0]}
+            alt={report.title}
+            className="w-full h-full object-cover"
+            width={800}
+            height={450}
+          />
+        </div>
+      )}
+      <div className="space-y-2">
+        {(report.city || report.region || report.country) && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            {[report.city, report.region, report.country]
+              .filter(Boolean)
+              .join(", ")}
+          </div>
+        )}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="h-4 w-4" />
+          {new Date(report.createdAt).toLocaleDateString()}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <User className="h-4 w-4" />
+          Reporter: {report.reporter?.name || report.reporter?.email}
+        </div>
+      </div>
+      <p className="text-sm leading-relaxed">{report.description}</p>
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">Community Reports Voting & Discussion</h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Vote on Reports
+        </h1>
+        <p className="text-muted-foreground">
+          Help prioritize community issues by voting on reports
+        </p>
+      </div>
 
-      <div className="flex gap-6">
-        {/* Voting Section - Left */}
-        <div className="w-1/2 space-y-4">
-          <h2 className="text-2xl font-bold mb-2">Vote for Reports</h2>
-          {reports.map(report => (
-            <div
-              key={report.id}
-              className="flex justify-between items-center border rounded-xl p-4 bg-white shadow-sm hover:bg-gray-50 transition"
-            >
-              <span className="font-medium">{report.title}</span>
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => handleVote(report.id)}>👍 Vote</Button>
-                <span>{report.voteCount ?? 0}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Discussion Section - Right */}
-        <div className="w-1/2 flex flex-col">
-          <h2 className="text-2xl font-bold mb-2">Community Discussion</h2>
-          <div className="flex-1 space-y-2 overflow-y-auto border rounded p-3 mb-3 max-h-[600px]">
-            {discussions.length === 0 ? (
-              <p className="text-sm text-gray-500">No comments yet.</p>
-            ) : (
-              discussions.map(d => (
-                <div key={d.id} className="border-b pb-1 text-sm">
-                  <span className="font-medium">{d.userId}</span>: {d.content}
+      {/* List of reports */}
+      <div className="space-y-6">
+        {votingEligibleReports.map((report: Report) => (
+          <Card key={report.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <CardTitle className="text-lg mb-2">
+                    {report.title}
+                  </CardTitle>
+                  {(report.city || report.region) && (
+                    <CardDescription className="flex items-center gap-2 mb-2">
+                      <MapPin className="h-4 w-4" />
+                      {[report.city, report.region]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </CardDescription>
+                  )}
                 </div>
-              ))
-            )}
-          </div>
-          <div className="flex gap-2 mt-auto">
-            <Input
-              placeholder="Add a comment..."
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-            />
-            <Button onClick={handleAddComment}>Send</Button>
-          </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 text-primary font-semibold">
+                    <Heart className="h-4 w-4 fill-current" />
+                    {report.votes?.length ?? 0}
+                  </div>
+                  <Button
+                    onClick={() => handleVote(report.id)}
+                    variant="outline"
+                    size="sm"
+                    className="hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <Heart className="h-4 w-4 mr-1" />
+                    Vote
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start gap-4">
+                {report.media && report.media.length > 0 && (
+                  <div className="w-24 h-24 overflow-hidden rounded-lg flex-shrink-0">
+                    <Image
+                      src={report.media[0]}
+                      alt={report.title}
+                      className="w-full h-full object-cover"
+                      width={96}
+                      height={96}
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                    {report.description}
+                  </p>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        View Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>{report.title}</DialogTitle>
+                      </DialogHeader>
+                      <ReportDetails report={report} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Top 3 Reports */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-foreground mb-6">
+          Top 3 Most Voted Reports
+        </h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {topReports.map((report: Report, index: number) => (
+            <Card key={report.id} className="relative">
+              <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">
+                {index + 1}
+              </div>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base line-clamp-2">
+                  {report.title}
+                </CardTitle>
+                <CardDescription className="flex items-center gap-1 text-primary font-semibold">
+                  <Heart className="h-4 w-4 fill-current" />
+                  {report.votes?.length ?? 0} votes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {report.media && report.media.length > 0 && (
+                  <div className="w-full h-32 overflow-hidden rounded-lg mb-3">
+                    <Image
+                      src={report.media[0]}
+                      alt={report.title}
+                      className="w-full h-full object-cover"
+                      width={320}
+                      height={128}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                  {report.description}
+                </p>
+                {report.city && (
+                  <Badge variant="secondary" className="text-xs">
+                    {report.city}
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default VotingReports;

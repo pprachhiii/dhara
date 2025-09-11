@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/volunteers → list all volunteers
+type AuthResponse = {
+  error: boolean;
+  user?: { id: string; email: string };
+  response?: NextResponse;
+};
+
+// GET /api/volunteers (public)
 export async function GET() {
   try {
     const volunteers = await prisma.volunteer.findMany({
       orderBy: { joinedAt: "desc" },
-      include: { tasks: true },
+      include: { tasks: true, user: true },
     });
 
     return NextResponse.json(volunteers);
@@ -15,19 +22,17 @@ export async function GET() {
   }
 }
 
-// POST /api/volunteers → register new volunteer
-// Body: { name: string, email?: string, phone?: string }
+// POST /api/volunteers (protected)
 export async function POST(req: NextRequest) {
+  const authResult = (await requireAuth(req)) as AuthResponse;
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
-    const { userId, phone } = await req.json();
+    const { phone } = await req.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 });
-    }
-
-    // Check if volunteer already exists for this user
+    // Check if volunteer already exists
     const existing = await prisma.volunteer.findUnique({
-      where: { userId },
+      where: { userId: authResult.user.id },
     });
 
     if (existing) {
@@ -36,16 +41,15 @@ export async function POST(req: NextRequest) {
 
     const volunteer = await prisma.volunteer.create({
       data: {
-        userId,
+        userId: authResult.user.id,
         phone: phone || null,
       },
-      include: { user: true }, // include user info if needed
+      include: { user: true },
     });
 
     return NextResponse.json({ message: "Volunteer registered", volunteer }, { status: 201 });
   } catch (err) {
-    console.error("POST /volunteer error:", err);
+    console.error("POST /volunteers error:", err);
     return NextResponse.json({ error: "Failed to register volunteer" }, { status: 500 });
   }
 }
-

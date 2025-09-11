@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/serverAuth";
 
 // POST /api/votes/reports
-// Body: { userId: string, reportId: string }
 export async function POST(req: NextRequest) {
-  try {
-    const { userId, reportId } = await req.json();
+  const auth = await requireAuth(req);
+  if (auth.error || !auth.user) return auth.response!;
 
-    if (!userId || !reportId) {
+  try {
+    const { reportId } = await req.json();
+    if (!reportId) {
       return NextResponse.json(
-        { error: "userId and reportId are required" },
+        { error: "reportId is required" },
         { status: 400 }
       );
     }
 
     const existing = await prisma.reportVote.findFirst({
-      where: { userId, reportId },
+      where: { userId: auth.user.id, reportId },
     });
+
     if (existing) {
       return NextResponse.json(
         { error: "You have already voted on this report" },
@@ -25,9 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const report = await prisma.report.findUnique({ where: { id: reportId } });
-    if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 });
-    }
+    if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
 
     const now = new Date();
 
@@ -50,12 +51,12 @@ export async function POST(req: NextRequest) {
     }
 
     const vote = await prisma.reportVote.create({
-      data: { userId, reportId },
+      data: { userId: auth.user.id, reportId },
     });
 
     const voteCount = await prisma.reportVote.count({ where: { reportId } });
+    const VOTE_THRESHOLD = 3;
 
-    const VOTE_THRESHOLD = 3; 
     if (voteCount >= VOTE_THRESHOLD && report.status !== "IN_PROGRESS") {
       await prisma.report.update({
         where: { id: reportId },

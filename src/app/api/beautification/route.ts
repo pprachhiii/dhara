@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { BeautifyType } from "@prisma/client";
+import { requireAuth } from "@/lib/serverAuth";
 
 // POST /api/beautification
 // Body: { driveId: string, type: BeautifyType, description?: string }
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth.error || !auth.user) return auth.response!;
+
   try {
     const { driveId, type, description } = await req.json();
 
@@ -24,7 +28,7 @@ export async function POST(req: NextRequest) {
       { message: "Beautification logged successfully", beautification },
       { status: 201 }
     );
-  } catch{
+  } catch {
     return NextResponse.json({ error: "Failed to log beautification" }, { status: 500 });
   }
 }

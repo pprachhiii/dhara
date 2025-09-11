@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MonitoringStatus } from "@prisma/client";
 import { Context } from "@/lib/context";
+import { requireAuth } from "@/lib/serverAuth";
 
 // PATCH /api/monitoring/:id → update monitoring
-// Body: { notes?: string, status?: MonitoringStatus, checkDate?: string }
 export async function PATCH(request: NextRequest, context: Context) {
+  const auth = await requireAuth(request);
+  if (auth.error || !auth.user) return auth.response!;
+
   try {
     const { id } = await context.params;
     const data = await request.json();
@@ -27,8 +30,11 @@ export async function PATCH(request: NextRequest, context: Context) {
   }
 }
 
-// DELETE /api/monitoring/:id
+// DELETE /api/monitoring/:id → delete monitoring
 export async function DELETE(request: NextRequest, context: Context) {
+  const auth = await requireAuth(request);
+  if (auth.error || !auth.user) return auth.response!;
+
   try {
     const { id } = await context.params;
     await prisma.monitoring.delete({ where: { id } });

@@ -10,10 +10,9 @@ import {
   TaskStatus,
   SocializingLevel,
   AuthorityType,
-  DriveStatus,
 } from "@/lib/types";
 
-type ModelType = "Task" | "Drive" | "Authority";
+type ModelType = "Task" | "Authority" | "Volunteer";
 type FormState = Record<string, string | number | undefined>;
 
 interface CreateFormProps {
@@ -27,12 +26,11 @@ interface CreateFormProps {
 const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel) as SocializingLevel[];
 const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus) as TaskStatus[];
 const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType) as AuthorityType[];
-const DRIVE_STATUSES: DriveStatus[] = ["PLANNED", "VOTING_FINALIZED", "ONGOING", "COMPLETED"];
 
 interface Field {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "datetime-local" | "select" | "file";
+  type: "text" | "textarea" | "number" | "datetime-local" | "select";
   options?: readonly string[];
 }
 
@@ -45,7 +43,6 @@ export default function CreateForm({
 }: CreateFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>({ ...initialValues });
-  const [uploading, _setUploading] = useState(false);
 
   useEffect(() => {
     setForm({ ...initialValues });
@@ -55,6 +52,11 @@ export default function CreateForm({
 
   const getFields = (): Field[] => {
     switch (model) {
+      case "Volunteer":
+        return [
+          { name: "userId", label: "User ID", type: "text" },
+          { name: "phone", label: "Phone", type: "text" },
+        ];
       case "Task":
         return [
           { name: "reportId", label: "Report ID", type: "text" },
@@ -63,15 +65,6 @@ export default function CreateForm({
           { name: "comfort", label: "Comfort Level", type: "select", options: SOCIALIZING_LEVELS },
           { name: "status", label: "Status", type: "select", options: TASK_STATUSES },
           { name: "timeSlot", label: "Time Slot (DateTime)", type: "datetime-local" },
-        ];
-      case "Drive":
-        return [
-          { name: "title", label: "Title", type: "text" },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "participant", label: "Participant Count", type: "number" },
-          { name: "startDate", label: "Start Date", type: "datetime-local" },
-          { name: "endDate", label: "End Date", type: "datetime-local" },
-          { name: "status", label: "Status", type: "select", options: DRIVE_STATUSES },
         ];
       case "Authority":
         return [
@@ -97,8 +90,8 @@ export default function CreateForm({
     e.preventDefault();
 
     const endpointMap: Record<ModelType, string> = {
+      Volunteer: isEdit ? `/api/volunteers/${initialValues?.id}` : "/api/volunteers",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
-      Drive: isEdit ? `/api/drives/${initialValues?.id}` : "/api/drives",
       Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
     };
 
@@ -188,7 +181,7 @@ export default function CreateForm({
       })}
 
       <div className="flex gap-2 mt-2">
-        <Button type="submit" className="flex-1" disabled={uploading}>
+        <Button type="submit" className="flex-1">
           {isEdit ? "Update" : "Submit"} {model}
         </Button>
         {onClose && (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { requireAuth } from "@/lib/serverAuth";
 
 const REQUIRED_STATUS = "ELIGIBLE_DRIVE";
 
@@ -21,6 +22,7 @@ interface DriveInput {
   reportId?: string;
 }
 
+// GET /api/drives → public
 export async function GET(_request: NextRequest) {
   try {
     const drives = await prisma.drive.findMany({
@@ -40,11 +42,14 @@ export async function GET(_request: NextRequest) {
   }
 }
 
+// POST /api/drives → create drive (requires auth)
 export async function POST(request: NextRequest) {
+  const authResult = await requireAuth(request);
+  if (authResult.error || !authResult.user) return authResult.response!;
+
   try {
     const body: DriveInput = await request.json();
 
-    // --- Validate Title ---
     const title = body.title?.trim();
     if (!title) return NextResponse.json({ error: "Missing required field: title" }, { status: 400 });
 
@@ -53,47 +58,38 @@ export async function POST(request: NextRequest) {
     if (Array.isArray(body.linkedReports)) reportIds = body.linkedReports.filter((id): id is string => typeof id === "string");
     else if (typeof body.reportId === "string") reportIds = [body.reportId];
 
-    let reports: { id: string; title: string; description: string }[] = [];
-    if (reportIds.length > 0) {
-      const found = await prisma.report.findMany({
-        where: { id: { in: reportIds } },
-        select: { id: true, title: true, description: true, status: true },
-      });
+    if (!reportIds.length) return NextResponse.json({ error: "At least one report is required" }, { status: 400 });
 
-      const missing = reportIds.filter(id => !found.some(f => f.id === id));
-      if (missing.length) return NextResponse.json({ error: "Some reports not found", missing }, { status: 404 });
+    const foundReports = await prisma.report.findMany({
+      where: { id: { in: reportIds } },
+      select: { id: true, title: true, description: true, status: true },
+    });
 
-      const ineligible = found.filter(r => r.status !== REQUIRED_STATUS);
-      if (ineligible.length) {
-        return NextResponse.json({
-          error: `Drive can only be created for reports with status ${REQUIRED_STATUS}`,
-          ineligible: ineligible.map(r => ({ id: r.id, status: r.status })),
-        }, { status: 400 });
-      }
+    const missingReports = reportIds.filter(id => !foundReports.some(r => r.id === id));
+    if (missingReports.length) return NextResponse.json({ error: "Some reports not found", missingReports }, { status: 404 });
 
-      reports = found.map(r => ({ id: r.id, title: r.title, description: r.description }));
+    const ineligible = foundReports.filter(r => r.status !== REQUIRED_STATUS);
+    if (ineligible.length) {
+      return NextResponse.json({
+        error: `Drive can only be created for reports with status ${REQUIRED_STATUS}`,
+        ineligible: ineligible.map(r => ({ id: r.id, status: r.status })),
+      }, { status: 400 });
     }
 
-    if (!reports.length) {
-      return NextResponse.json({ error: "At least one eligible report is required for a drive." }, { status: 400 });
-    }
-
-    // --- Parse Dates ---
+    // --- Dates ---
     const parseDate = (d?: string) => d ? new Date(d) : undefined;
     const startDate = parseDate(body.proposedDate) ?? new Date();
     const endDate = parseDate(body.endDate);
 
-    // --- Participants ---
+    // --- Participant count ---
     const participant = Number.isFinite(Number(body.participant)) ? Number(body.participant) : 0;
 
     // --- Tasks ---
-    // Assign each task to the first linked report
     const tasksData: Prisma.TaskCreateManyDriveInput[] = body.taskBreakdown?.map((task: TaskInput) => ({
-      title: task.title,
-      description: task.description,
+      reportId: foundReports[0].id,
       comfort: task.comfort,
       status: "OPEN",
-      reportId: reports[0].id, // required field
+      // Task title/description not part of schema directly, could be handled in `Task.description`
     })) ?? [];
 
     // --- Create Drive ---
@@ -104,11 +100,13 @@ export async function POST(request: NextRequest) {
         participant,
         startDate,
         endDate,
-        reports: { create: reports.map(r => ({
-          title: r.title,
-          description: r.description,
-          report: { connect: { id: r.id } },
-        })) },
+        reports: {
+          create: foundReports.map(r => ({
+            report: { connect: { id: r.id } },
+            title: r.title,
+            description: r.description,
+          })),
+        },
         tasks: { create: tasksData },
       },
       include: {
@@ -121,11 +119,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(drive, { status: 201 });
-  } catch (err: unknown) {
+  } catch (err) {
     console.error("Error creating drive:", err);
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      return NextResponse.json({ error: "Database error creating drive" }, { status: 500 });
-    }
     return NextResponse.json({ error: "Failed to create drive" }, { status: 500 });
   }
 }

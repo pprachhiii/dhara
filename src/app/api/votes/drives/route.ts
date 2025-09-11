@@ -1,32 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/serverAuth";
 
 // POST /api/votes/drives
-// Body: { userId: string, driveId: string }
 export async function POST(req: NextRequest) {
-  try {
-    const { userId, driveId } = await req.json();
+  const auth = await requireAuth(req);
+  if (auth.error || !auth.user) return auth.response!;
 
-    if (!userId || !driveId) {
+  try {
+    const { driveId } = await req.json();
+
+    if (!driveId) {
       return NextResponse.json(
-        { error: "userId and driveId are required" },
+        { error: "driveId is required" },
         { status: 400 }
       );
     }
 
     const existing = await prisma.driveVote.findFirst({
-      where: { userId, driveId },
+      where: { userId: auth.user.id, driveId },
     });
 
     if (existing) {
       return NextResponse.json(
         { error: "You have already voted on this drive" },
-        { status: 409 } // Conflict
+        { status: 409 }
       );
     }
 
     const vote = await prisma.driveVote.create({
-      data: { userId, driveId },
+      data: { userId: auth.user.id, driveId },
     });
 
     return NextResponse.json(
