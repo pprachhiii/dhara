@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAppStore } from '@/lib/stores';
-import { Users, Calendar, Plus, X, MapPin, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ProposeDriveInput, useAppStore } from "@/lib/stores";
+import { Users, Calendar, Plus, X, MapPin, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
-import { SocializingLevel} from '@/lib/types';
+import { SocializingLevel } from "@/lib/types";
+
+interface TaskForm {
+  title: string;
+  description: string;
+  comfortLevel: SocializingLevel;
+}
 
 interface DriveFormData {
   title: string;
@@ -23,50 +29,57 @@ interface DriveFormData {
   taskBreakdown: TaskForm[];
 }
 
-interface TaskForm {
+interface DriveTaskPayload {
   title: string;
   description: string;
-  comfortLevel: SocializingLevel;
+  comfort: SocializingLevel;
+}
+
+export interface BackendDriveResponse {
+  id: string;
+  title: string;
+  description: string;
+  proposedDate: string;
+  reports: { reportId: string }[];
+  taskBreakdown: DriveTaskPayload[];
 }
 
 export default function NewDrive() {
   const router = useRouter();
-  const { proposeDrive, reports, fetchReports } = useAppStore();
-  useEffect(() => {
-    fetchReports(); 
-  }, [fetchReports]);
+  const { reports, fetchReports, proposeDrive } = useAppStore();
 
   const [formData, setFormData] = useState<DriveFormData>({
-    title: '',
-    description: '',
-    proposedDate: '',
+    title: "",
+    description: "",
+    proposedDate: "",
     linkedReports: [],
-    taskBreakdown: []
+    taskBreakdown: [],
   });
 
   const [currentTask, setCurrentTask] = useState<TaskForm>({
-    title: '',
-    description: '',
-    comfortLevel: SocializingLevel.GROUP
+    title: "",
+    description: "",
+    comfortLevel: SocializingLevel.GROUP,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Eligible reports for linking
-  const eligibleReports = reports.filter(
-    (r) => r.status === "ELIGIBLE_DRIVE"
-  );
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  const eligibleReports = reports.filter((r) => r.status === "ELIGIBLE_DRIVE");
 
   const handleInputChange = (field: keyof DriveFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleReportToggle = (reportId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       linkedReports: prev.linkedReports.includes(reportId)
-        ? prev.linkedReports.filter(id => id !== reportId)
-        : [...prev.linkedReports, reportId]
+        ? prev.linkedReports.filter((id) => id !== reportId)
+        : [...prev.linkedReports, reportId],
     }));
   };
 
@@ -76,23 +89,34 @@ export default function NewDrive() {
       return;
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      taskBreakdown: [...prev.taskBreakdown, { ...currentTask }]
+      taskBreakdown: [...prev.taskBreakdown, { ...currentTask }],
     }));
 
     setCurrentTask({
-      title: '',
-      description: '',
-      comfortLevel: SocializingLevel.GROUP
+      title: "",
+      description: "",
+      comfortLevel: SocializingLevel.GROUP,
     });
   };
 
   const handleRemoveTask = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      taskBreakdown: prev.taskBreakdown.filter((_, i) => i !== index)
+      taskBreakdown: prev.taskBreakdown.filter((_, i) => i !== index),
     }));
+  };
+
+  const getComfortLevelColor = (level: SocializingLevel) => {
+    switch (level) {
+      case SocializingLevel.SOLO:
+        return "bg-blue-100 text-blue-800";
+      case SocializingLevel.DUAL:
+        return "bg-yellow-100 text-yellow-800";
+      case SocializingLevel.GROUP:
+        return "bg-green-100 text-green-800";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,53 +128,68 @@ export default function NewDrive() {
     }
 
     if (formData.taskBreakdown.length === 0) {
-      toast.error("Please add at least one task for the drive.");
+      toast.error("Please add at least one task.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      proposeDrive({
+      const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
+        proposedDate: formData.proposedDate,
         linkedReports: formData.linkedReports,
-        proposedDate: new Date(formData.proposedDate),
-        taskBreakdown: formData.taskBreakdown.map((task, index) => ({
-          id: `task-${Date.now()}-${index}`,
+        taskBreakdown: formData.taskBreakdown.map<DriveTaskPayload>((task) => ({
           title: task.title,
           description: task.description,
           comfort: task.comfortLevel,
-          completed: false
         })),
-        status: 'VOTING_FINALIZED'
+      };
+
+      const response = await fetch("/api/drives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      toast.success("Drive Proposed Successfully!");
-      router.push('/drives');
-    } catch{
-      toast.error("There was an error submitting your drive proposal. Please try again.");
+      if (!response.ok) {
+        const errData: { error?: string } = await response.json();
+        throw new Error(errData.error || "Failed to create drive");
+      }
+
+      const createdDrive: BackendDriveResponse = await response.json();
+
+      // Correctly map reports to linkedReports to prevent undefined errors
+      const driveToStore: ProposeDriveInput = {
+        title: createdDrive.title,
+        description: createdDrive.description,
+        proposedDate: new Date(createdDrive.proposedDate),
+        linkedReports: createdDrive.reports.map((r) => r.reportId),
+        status: "PLANNED",
+        taskBreakdown: createdDrive.taskBreakdown.map((task) => ({
+          id: crypto.randomUUID(),
+          title: task.title,
+          description: task.description,
+          comfort: task.comfort,
+          completed: false,
+        })),
+      };
+
+      proposeDrive(driveToStore);
+
+
+
+      toast.success("Drive created successfully!");
+      router.push("/drives");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error(message);
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const getComfortLevelColor = (level: SocializingLevel) => {
-    switch (level) {
-      case SocializingLevel.SOLO: return 'bg-blue-100 text-blue-800';
-      case SocializingLevel.DUAL: return 'bg-yellow-100 text-yellow-800';
-      case SocializingLevel.GROUP: return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-console.log("Reports from store:", reports.map(r => ({
-  id: r.id,
-  title: r.title,
-  status: r.status
-})));
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
@@ -162,9 +201,7 @@ console.log("Reports from store:", reports.map(r => ({
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground">Propose Community Drive</h1>
-            <p className="text-muted-foreground">
-              Organize community action to address environmental issues
-            </p>
+            <p className="text-muted-foreground">Organize community action to address environmental issues</p>
           </div>
         </div>
 
@@ -185,7 +222,7 @@ console.log("Reports from store:", reports.map(r => ({
                   id="title"
                   placeholder="e.g., Community Cleanup Drive"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
                 />
               </div>
 
@@ -196,7 +233,7 @@ console.log("Reports from store:", reports.map(r => ({
                   id="description"
                   placeholder="Describe the drive objectives..."
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
                   rows={4}
                 />
               </div>
@@ -210,7 +247,7 @@ console.log("Reports from store:", reports.map(r => ({
                     id="proposedDate"
                     type="datetime-local"
                     value={formData.proposedDate}
-                    onChange={(e) => handleInputChange('proposedDate', e.target.value)}
+                    onChange={(e) => handleInputChange("proposedDate", e.target.value)}
                     className="pl-10"
                     min={new Date().toISOString().slice(0, 16)}
                   />
@@ -254,25 +291,33 @@ console.log("Reports from store:", reports.map(r => ({
               <div className="space-y-4">
                 <Label>Task Breakdown ({formData.taskBreakdown.length} tasks)</Label>
 
-                {/* Add New Task */}
+                {/* Add Task */}
                 <Card className="bg-muted/20">
                   <CardContent className="pt-4">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="taskTitle" className="text-xs font-medium">Task Title</Label>
+                          <Label htmlFor="taskTitle" className="text-xs font-medium">
+                            Task Title
+                          </Label>
                           <Input
                             id="taskTitle"
                             placeholder="e.g., Waste Collection"
                             value={currentTask.title}
-                            onChange={(e) => setCurrentTask(prev => ({ ...prev, title: e.target.value }))}
+                            onChange={(e) =>
+                              setCurrentTask((prev) => ({ ...prev, title: e.target.value }))
+                            }
                           />
                         </div>
                         <div>
-                          <Label htmlFor="taskComfort" className="text-xs font-medium">Comfort Level</Label>
-                          <Select 
-                            value={currentTask.comfortLevel} 
-                            onValueChange={(value: SocializingLevel) => setCurrentTask(prev => ({ ...prev, comfortLevel: value }))}
+                          <Label htmlFor="taskComfort" className="text-xs font-medium">
+                            Comfort Level
+                          </Label>
+                          <Select
+                            value={currentTask.comfortLevel}
+                            onValueChange={(value: SocializingLevel) =>
+                              setCurrentTask((prev) => ({ ...prev, comfortLevel: value }))
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -287,12 +332,16 @@ console.log("Reports from store:", reports.map(r => ({
                       </div>
 
                       <div>
-                        <Label htmlFor="taskDescription" className="text-xs font-medium">Description</Label>
+                        <Label htmlFor="taskDescription" className="text-xs font-medium">
+                          Description
+                        </Label>
                         <Textarea
                           id="taskDescription"
                           placeholder="Describe this task..."
                           value={currentTask.description}
-                          onChange={(e) => setCurrentTask(prev => ({ ...prev, description: e.target.value }))}
+                          onChange={(e) =>
+                            setCurrentTask((prev) => ({ ...prev, description: e.target.value }))
+                          }
                           rows={2}
                         />
                       </div>
@@ -328,10 +377,10 @@ console.log("Reports from store:", reports.map(r => ({
                 )}
               </div>
 
-              {/* Submit Button */}
+              {/* Submit */}
               <div className="pt-4">
                 <Button type="submit" className="w-full forest-gradient text-white" disabled={isSubmitting}>
-                  {isSubmitting ? 'Proposing Drive...' : 'Propose Drive'}
+                  {isSubmitting ? "Creating Drive..." : "Create Drive"}
                 </Button>
               </div>
             </form>

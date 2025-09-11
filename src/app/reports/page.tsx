@@ -20,15 +20,18 @@ import { Report } from "@/lib/types";
 
 export default function Reports() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [expandedSections, setExpandedSections] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const { reports, setReports } = useAppStore();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
 
   // Fetch reports from API
   useEffect(() => {
-    const fetchReports = async () => {
+    const fetchReports = async (): Promise<void> => {
       try {
         const res = await fetch("/api/reports");
         if (!res.ok) throw new Error("Failed to fetch reports");
@@ -42,8 +45,8 @@ export default function Reports() {
     fetchReports();
   }, [setReports]);
 
-  const filteredReports = reports
-    .filter((report) => {
+  const filteredReports: Report[] = reports
+    .filter((report: Report) => {
       const matchesSearch =
         report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -51,7 +54,7 @@ export default function Reports() {
         statusFilter === "all" || report.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => {
+    .sort((a: Report, b: Report) => {
       switch (sortBy) {
         case "recent":
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -64,7 +67,7 @@ export default function Reports() {
       }
     });
 
-  const mapReportForCard = (report: Report) => ({
+  const mapReportForCard = (report: Report): Report => ({
     ...report,
     votes: report.votes?.map((v) => ({
       id: v.id,
@@ -105,13 +108,82 @@ export default function Reports() {
     })),
   });
 
-  const votingReports = filteredReports.filter(
+  // ---- SECTION FILTERS ----
+
+  const createDriveReports: Report[] = filteredReports.filter(
     (r) => r.status === ReportStatus.ELIGIBLE_DRIVE
   );
-  const authorityContactReports = filteredReports;
-  const otherReports = filteredReports.filter(
-    (r) => r.status !== ReportStatus.ELIGIBLE_DRIVE
+
+  const authorityContactReports: Report[] = filteredReports.filter(
+    (r) =>
+      r.status === ReportStatus.PENDING ||
+      r.status === ReportStatus.AUTHORITY_CONTACTED
   );
+
+  const votingReports: Report[] = filteredReports.filter((r) => {
+    const isOlderThanAWeek =
+      r.status === ReportStatus.AUTHORITY_CONTACTED &&
+      new Date().getTime() - new Date(r.updatedAt).getTime() >
+        7 * 24 * 60 * 60 * 1000;
+    const hasMultipleDrives =
+      (r.tasks?.filter((t) => t.driveId !== null).length ?? 0) > 1;
+    return isOlderThanAWeek || hasMultipleDrives;
+  });
+
+  const inProgressReports: Report[] = filteredReports.filter(
+    (r) =>
+      r.status === ReportStatus.IN_PROGRESS ||
+      r.status === ReportStatus.VOTING_FINALIZED
+  );
+
+  const resolvedReports: Report[] = filteredReports.filter(
+    (r) => r.status === ReportStatus.RESOLVED
+  );
+
+  // Helper to render a section with collapse/expand
+  const renderSection = (
+    title: string,
+    reportsArray: Report[],
+    sectionKey: string,
+    description: string,
+    cardProps?: { showVoting?: boolean; showCreateDrive?: boolean; showAuthorityContact?: boolean }
+  ) => {
+    if (reportsArray.length === 0) return null;
+
+    const isExpanded = expandedSections[sectionKey] ?? false;
+    const visibleReports = isExpanded ? reportsArray : reportsArray.slice(0, 3);
+
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">{title} ({reportsArray.length})</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+          {visibleReports.map((report) => (
+            <ReportCard
+              key={report.id}
+              report={mapReportForCard(report)}
+              {...cardProps}
+              onViewDetails={() => setSelectedReport(report)}
+            />
+          ))}
+        </div>
+        {reportsArray.length > 3 && (
+          <Button
+            variant="outline"
+            className="mt-2"
+            onClick={() =>
+              setExpandedSections((prev) => ({
+                ...prev,
+                [sectionKey]: !isExpanded,
+              }))
+            }
+          >
+            {isExpanded ? "Collapse" : "View All"}
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -172,67 +244,43 @@ export default function Reports() {
         </Select>
       </div>
 
-      {/* Voting Hub */}
-      {votingReports.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Community Voting Hub ({votingReports.length})
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            These reports need community votes to proceed to action phase.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {votingReports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={mapReportForCard(report)}
-                showVoting
-                onViewDetails={() => setSelectedReport(report)}
-              />
-            ))}
-          </div>
-        </div>
+      {/* Sections */}
+      {renderSection(
+        "Create Drive Hub",
+        createDriveReports,
+        "createDrive",
+        "These reports are eligible for new environmental drives. Volunteers can initiate and organize clean-up or awareness campaigns.",
+        { showCreateDrive: true }
       )}
 
-      {/* Authority Contact Hub */}
-      {authorityContactReports.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Authority Contact Hub ({authorityContactReports.length})
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            These reports are ready for authority contact. Volunteers can reach
-            out to relevant officials.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {authorityContactReports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={mapReportForCard(report)}
-                showAuthorityContact
-                onViewDetails={() => setSelectedReport(report)}
-              />
-            ))}
-          </div>
-        </div>
+      {renderSection(
+        "Authority Contact Hub",
+        authorityContactReports,
+        "authorityContact",
+        "Reports pending or already contacted by authority.",
+        { showAuthorityContact: true }
       )}
 
-      {/* Other Reports */}
-      {otherReports.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            All Reports ({otherReports.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {otherReports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={mapReportForCard(report)}
-                onViewDetails={() => setSelectedReport(report)}
-              />
-            ))}
-          </div>
-        </div>
+      {renderSection(
+        "Community Voting Hub",
+        votingReports,
+        "voting",
+        "Reports that need community votes (older than a week or with multiple drives).",
+        { showVoting: true }
+      )}
+
+      {renderSection(
+        "In Progress",
+        inProgressReports,
+        "inProgress",
+        "Reports that are being worked on or finalized."
+      )}
+
+      {renderSection(
+        "Resolved",
+        resolvedReports,
+        "resolved",
+        "Reports that have been successfully resolved."
       )}
 
       {/* Empty State */}

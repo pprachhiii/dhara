@@ -18,10 +18,12 @@ import { DriveStatus } from "@prisma/client";
 
 export default function Drives() {
   const { drives, setDrives } = useAppStore();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
+  // Fetch drives
   useEffect(() => {
     const fetchDrives = async () => {
       try {
@@ -29,15 +31,14 @@ export default function Drives() {
         if (!res.ok) throw new Error("Failed to fetch drives");
         const data: typeof drives = await res.json();
         setDrives(data);
-      } catch (err) {
-        console.error("Error fetching drives:", err);
+      } catch (error) {
+        console.error("Error fetching drives:", error);
       }
     };
-
     fetchDrives();
   }, [setDrives]);
 
-  // Filtered & sorted drives
+  // Filter & sort drives
   const filteredDrives = drives
     .filter((drive) => {
       const matchesSearch =
@@ -59,17 +60,18 @@ export default function Drives() {
       }
     });
 
-  // Map drive for card (if extra processing needed)
-  const mapDriveForCard = (drive: typeof drives[number]) => ({
+  // Map drives for cards
+  type DriveType = typeof drives[number];
+  const mapDriveForCard = (drive: DriveType) => ({
     ...drive,
-    reports: drive.reports?.map((dr) => ({
-      id: dr.id,
-      title: dr.report.title,
-      description: dr.report.description,
-      reportId: dr.reportId,
-      driveId: dr.driveId,
-      drive: dr.drive,
-      report: dr.report,
+    reports: drive.reports?.map((r) => ({
+      id: r.id,
+      title: r.report.title,
+      description: r.report.description,
+      reportId: r.reportId,
+      driveId: r.driveId,
+      drive: r.drive,
+      report: r.report,
     })),
     votes: drive.votes?.map((v) => ({
       id: v.id,
@@ -99,17 +101,49 @@ export default function Drives() {
     monitorings: drive.monitorings ?? [],
   });
 
-  const upcomingDrives = filteredDrives
-    .filter((d) => d.status === DriveStatus.PLANNED)
-    .map(mapDriveForCard);
+  // Categorize drives by status
+  const drivesByStatus: Record<DriveStatus, DriveType[]> = {
+    [DriveStatus.PLANNED]: filteredDrives.filter((d) => d.status === DriveStatus.PLANNED).map(mapDriveForCard),
+    [DriveStatus.ONGOING]: filteredDrives.filter((d) => d.status === DriveStatus.ONGOING).map(mapDriveForCard),
+    [DriveStatus.VOTING_FINALIZED]: filteredDrives.filter((d) => d.status === DriveStatus.VOTING_FINALIZED).map(mapDriveForCard),
+    [DriveStatus.COMPLETED]: filteredDrives.filter((d) => d.status === DriveStatus.COMPLETED).map(mapDriveForCard),
+  };
 
-  const ongoingDrives = filteredDrives
-    .filter((d) => d.status === DriveStatus.ONGOING)
-    .map(mapDriveForCard);
+  // Helper to render each section with expand/collapse
+  const renderSection = (
+    title: string,
+    sectionKey: string,
+    description: string,
+    drivesArray: DriveType[],
+    cardProps?: { showRegister?: boolean; showParticipation?: boolean; showSummary?: boolean }
+  ) => {
+    if (drivesArray.length === 0) return null;
+    const isExpanded = expandedSections[sectionKey] ?? false;
+    const visibleDrives = isExpanded ? drivesArray : drivesArray.slice(0, 3);
 
-  const completedDrives = filteredDrives
-    .filter((d) => d.status === DriveStatus.COMPLETED || d.status === DriveStatus.VOTING_FINALIZED)
-    .map(mapDriveForCard);
+    return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">{title} ({drivesArray.length})</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+          {visibleDrives.map((drive) => (
+            <DriveCard key={drive.id} drive={drive} {...cardProps} />
+          ))}
+        </div>
+        {drivesArray.length > 3 && (
+          <Button
+            variant="outline"
+            className="mt-2"
+            onClick={() =>
+              setExpandedSections((prev) => ({ ...prev, [sectionKey]: !isExpanded }))
+            }
+          >
+            {isExpanded ? "Collapse" : "View All"}
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -117,14 +151,9 @@ export default function Drives() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Community Drives</h1>
-          <p className="text-muted-foreground">
-            Join organized community efforts to address environmental issues
-          </p>
+          <p className="text-muted-foreground">Join organized community efforts to address environmental issues</p>
         </div>
-        <Button
-          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md transition"
-          asChild
-        >
+        <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md transition" asChild>
           <Link href="/drives/new">
             <Plus className="h-4 w-4 mr-2" /> Submit Drive
           </Link>
@@ -151,9 +180,7 @@ export default function Drives() {
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             {Object.values(DriveStatus).map((status) => (
-              <SelectItem key={status} value={status}>
-                {status}
-              </SelectItem>
+              <SelectItem key={status} value={status}>{status}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -170,47 +197,11 @@ export default function Drives() {
         </Select>
       </div>
 
-      {/* Upcoming Drives */}
-      {upcomingDrives.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Upcoming Drives ({upcomingDrives.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {upcomingDrives.map((drive) => (
-              <DriveCard key={drive.id} drive={drive} showRegister />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Ongoing Drives */}
-      {ongoingDrives.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Ongoing Drives ({ongoingDrives.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {ongoingDrives.map((drive) => (
-              <DriveCard key={drive.id} drive={drive} showParticipation />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Completed Drives */}
-      {completedDrives.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Completed Drives ({completedDrives.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {completedDrives.map((drive) => (
-              <DriveCard key={drive.id} drive={drive} showSummary />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Sections */}
+      {renderSection("Upcoming Drives", DriveStatus.PLANNED, "Drives planned for the near future.", drivesByStatus[DriveStatus.PLANNED], { showRegister: true })}
+      {renderSection("Ongoing Drives", DriveStatus.ONGOING, "Drives currently in progress.", drivesByStatus[DriveStatus.ONGOING], { showParticipation: true })}
+      {renderSection("Voting Finalized Drives", DriveStatus.VOTING_FINALIZED, "Drives with voting finalized.", drivesByStatus[DriveStatus.VOTING_FINALIZED], { showSummary: true })}
+      {renderSection("Completed Drives", DriveStatus.COMPLETED, "Drives that have been successfully completed.", drivesByStatus[DriveStatus.COMPLETED], { showSummary: true })}
 
       {/* Empty State */}
       {filteredDrives.length === 0 && (
@@ -219,18 +210,11 @@ export default function Drives() {
             <div className="w-16 h-16 mx-auto mb-4 bg-green-600 rounded-full flex items-center justify-center">
               <Search className="h-8 w-8 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No drives found
-            </h3>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No drives found</h3>
             <p className="text-muted-foreground mb-6">
-              {searchTerm || statusFilter !== "all"
-                ? "Try adjusting your search or filters."
-                : "Be the first to submit a community drive!"}
+              {searchTerm || statusFilter !== "all" ? "Try adjusting your search or filters." : "Be the first to submit a community drive!"}
             </p>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md transition"
-              asChild
-            >
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md transition" asChild>
               <Link href="/drives/new">
                 <Plus className="h-4 w-4 mr-2" /> Submit First Drive
               </Link>

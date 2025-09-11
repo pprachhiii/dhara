@@ -143,7 +143,7 @@ export function ReportCard({
 
               // Drive Phase
               case "ELIGIBLE_DRIVE":
-                if (driveCount === 1) {
+                if (driveCount === 1 || driveCount === 0 ) {
                   return (
                     <Button
                       className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
