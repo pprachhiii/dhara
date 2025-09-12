@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ReportCard } from "@/components/ReportCard";
 import { DriveCard } from "@/components/DriveCard";
 import { ReportDetailPage } from "@/components/ReportDetailedPage";
+import { DriveDetailPage } from "@/components/DriveDetailedPage";
 import heroImage from '@/../public/hero-community.png';
 import { FileText, Users, Award, TrendingUp, Plus } from "lucide-react";
 
@@ -22,6 +23,7 @@ interface HomePageClientProps {
 
 export default function HomePageClient({ initialReports, initialDrives, initialVolunteers }: HomePageClientProps) {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedDrive, setSelectedDrive] = useState<Drive | null>(null); // ✅ new state
 
   const reports = initialReports;
   const drives = initialDrives;
@@ -201,8 +203,7 @@ export default function HomePageClient({ initialReports, initialDrives, initialV
                 <DriveCard
                   key={drive.id}
                   drive={drive}
-                  showVoting={drive.status === "VOTING_FINALIZED"}
-                  showSignup={drive.status === "PLANNED"}
+                  onViewDetails={() => setSelectedDrive(drive)} // ✅ new
                 />
               ))
             ) : (
@@ -223,6 +224,13 @@ export default function HomePageClient({ initialReports, initialDrives, initialV
         <ReportDetailPage
           report={selectedReport}
           onClose={() => setSelectedReport(null)}
+        />
+      )}
+
+      {selectedDrive && (
+        <DriveDetailPage
+          drive={selectedDrive}
+          onClose={() => setSelectedDrive(null)}
         />
       )}
     </main>

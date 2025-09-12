@@ -1,44 +1,33 @@
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Heart, Calendar, Users, CheckCircle } from 'lucide-react';
-import { Drive} from '@/lib/types';
-import { useAppStore } from '@/lib/stores';
+"use client";
+
+import Link from "next/link";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Users, CheckCircle } from "lucide-react";
+import { Drive, Task } from "@/lib/types";
 
 interface DriveCardProps {
-  drive: Drive;
-  showVoting?: boolean;
-  showSignup?: boolean;
-  showRegister?: boolean;        // For upcoming drives
-  showParticipation?: boolean;  
-  showSummary?: boolean;
+  drive: Drive & {
+    tasks?: Task[];
+    reports?: { id: string }[];
+  };
+  onViewDetails?: () => void;
 }
 
-export function DriveCard({ drive, showVoting = true, showSignup = false }: DriveCardProps) {
-  const { voteOnDrive, signupForDrive, currentUser } = useAppStore();
-
-  const getStatusBadge = (status: Drive['status']) => {
-    const statusConfig: Record<Drive['status'], { label: string; className: string }> = {
-      PLANNED: { label: 'Planned', className: 'phase-progress' },
-      VOTING_FINALIZED: { label: 'Voting Finalized', className: 'phase-voting' },
-      ONGOING: { label: 'Ongoing', className: 'phase-progress' },
-      COMPLETED: { label: 'Completed', className: 'phase-completed' },
+export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
+  const getStatusBadge = (status: Drive["status"]) => {
+    const statusConfig: Record<Drive["status"], { label: string; className: string }> = {
+      PLANNED: { label: "Planned", className: "phase-progress" },
+      VOTING_FINALIZED: { label: "Voting Finalized", className: "phase-voting" },
+      ONGOING: { label: "Ongoing", className: "phase-progress" },
+      COMPLETED: { label: "Completed", className: "phase-completed" },
     };
     return <Badge className={statusConfig[status].className}>{statusConfig[status].label}</Badge>;
   };
 
-  const handleVote = () => voteOnDrive(drive.id);
-
-  const handleSignup = () => {
-    if (currentUser) {
-      signupForDrive(drive.id, currentUser.id);
-    }
-  };
-
   // volunteer count from tasks
-  const volunteerIds = (drive.tasks ?? [])
-    .map((task) => task.volunteerId)
-    .filter(Boolean);
+  const volunteerIds = (drive.tasks ?? []).map((task) => task.volunteerId).filter(Boolean);
   const uniqueVolunteers = new Set(volunteerIds);
   const volunteerCount = uniqueVolunteers.size;
 
@@ -46,11 +35,8 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
   const completedTasks = (drive.tasks ?? []).filter((t) => t.status === "DONE").length;
   const totalTasks = (drive.tasks ?? []).length;
 
-  // is user signed up?
-  const isSignedUp = currentUser && volunteerIds.includes(currentUser.id);
-
   return (
-    <Card className="overflow-hidden transition-smooth hover:shadow-elevated">
+    <Card className="overflow-hidden transition hover:shadow-lg rounded-2xl">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -64,9 +50,7 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
 
       <CardContent className="space-y-4">
         {/* Description */}
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {drive.description}
-        </p>
+        <p className="text-sm text-muted-foreground line-clamp-3">{drive.description}</p>
 
         {/* Meta information */}
         <div className="space-y-2">
@@ -74,7 +58,7 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
             <Calendar className="h-4 w-4" />
             <span>{new Date(drive.startDate).toLocaleDateString()}</span>
           </div>
-          
+
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             <span>{volunteerCount} volunteers signed up</span>
@@ -83,7 +67,9 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
           {(drive.status === "ONGOING" || drive.status === "COMPLETED") && (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <CheckCircle className="h-4 w-4" />
-              <span>{completedTasks}/{totalTasks} tasks completed</span>
+              <span>
+                {completedTasks}/{totalTasks} tasks completed
+              </span>
             </div>
           )}
         </div>
@@ -99,7 +85,13 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
                     task.status === "DONE" ? "bg-success" : "bg-muted-foreground"
                   }`}
                 />
-                <span className={`${task.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
+                <span
+                  className={
+                    task.status === "DONE"
+                      ? "line-through text-muted-foreground"
+                      : ""
+                  }
+                >
                   {task.report?.title ?? "Untitled Task"}
                 </span>
                 <Badge variant="outline" className="text-xs">
@@ -126,41 +118,56 @@ export function DriveCard({ drive, showVoting = true, showSignup = false }: Driv
 
       <CardFooter className="pt-4 border-t bg-muted/20">
         <div className="flex items-center justify-between w-full">
-          {/* Voting */}
-          {showVoting && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleVote}
-              className="flex items-center space-x-2 text-muted-foreground hover:text-accent transition-smooth"
-            >
-              <Heart className="h-4 w-4" />
-              <span>{drive.votes?.length ?? 0}</span>
+          {/* Always show View Details */}
+          {onViewDetails ? (
+            <Button variant="outline" size="sm" onClick={onViewDetails}>
+              View Details
             </Button>
+          ) : (
+            <Link href={`/drives/${drive.id}`}>
+              <Button variant="outline" size="sm">
+                View Details
+              </Button>
+            </Link>
           )}
 
-          {/* Signup */}
-          {showSignup && !isSignedUp && (
-            <Button
-              onClick={handleSignup}
-              size="sm"
-              className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Sign Up
-            </Button>
+          {/* Status-based buttons */}
+          {drive.status === "PLANNED" && (
+            <Link href="/votes/drives">
+              <Button
+                size="sm"
+                className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
+              >
+                Vote
+              </Button>
+            </Link>
           )}
 
-          {showSignup && isSignedUp && (
-            <div className="flex items-center space-x-2 text-sm text-success">
-              <CheckCircle className="h-4 w-4" />
-              <span>Signed Up</span>
+          {drive.status === "ONGOING" && (
+            <div className="flex gap-2">
+              <Link href="/tasks">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shadow-gentle hover:shadow-accent transition-smooth"
+                >
+                  Tasks
+                </Button>
+              </Link>
+              <Link href="/form?model=Volunteer">
+                <Button
+                  size="sm"
+                  className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
+                >
+                  Volunteer
+                </Button>
+              </Link>
             </div>
           )}
 
-          {!showVoting && !showSignup && (
-            <Button variant="outline" size="sm">
-              View Details
+          {drive.status === "COMPLETED" && (
+            <Button size="sm" disabled variant="secondary">
+              Completed
             </Button>
           )}
         </div>

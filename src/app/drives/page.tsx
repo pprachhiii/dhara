@@ -15,6 +15,8 @@ import { useAppStore } from "@/lib/stores";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { DriveStatus } from "@prisma/client";
+import { DriveDetailPage } from "@/components/DriveDetailedPage";
+import { Drive } from "@/lib/types";
 
 export default function Drives() {
   const { drives, setDrives } = useAppStore();
@@ -22,6 +24,7 @@ export default function Drives() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [selectedDrive, setSelectedDrive] = useState<Drive | null>(null); 
 
   // Fetch drives
   useEffect(() => {
@@ -127,7 +130,12 @@ export default function Drives() {
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
           {visibleDrives.map((drive) => (
-            <DriveCard key={drive.id} drive={drive} {...cardProps} />
+            <DriveCard
+              key={drive.id}
+              drive={drive}
+              {...cardProps}
+              onViewDetails={() => setSelectedDrive(drive)} // 👈 added
+            />
           ))}
         </div>
         {drivesArray.length > 3 && (
@@ -147,6 +155,11 @@ export default function Drives() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* 🔹 Overlay for selected drive */}
+      {selectedDrive && (
+        <DriveDetailPage drive={selectedDrive} onClose={() => setSelectedDrive(null)} />
+      )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

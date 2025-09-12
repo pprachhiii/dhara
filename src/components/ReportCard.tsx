@@ -169,7 +169,7 @@ export function ReportCard({
                 return (
                   <Button
                     className="bg-blue-500 hover:bg-blue-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/volunteer")}
+                    onClick={() => (window.location.href = "/form?model=Volunteer")}
                   >
                     Volunteer
                   </Button>
@@ -187,7 +187,7 @@ export function ReportCard({
                     </Button>
                     <Button
                       className="bg-blue-500 hover:bg-blue-600 text-white shadow-md transition"
-                      onClick={() => (window.location.href = "/volunteer")}
+                      onClick={() => (window.location.href = "/form?model=Volunteer")}
                     >
                       Volunteer
                     </Button>

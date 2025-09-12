@@ -10,21 +10,23 @@ import {
   ReportAuthority,
   SocializingLevel,
   DriveReport,
+  DriveStatus,
 } from "@/lib/types";
 
 export interface ProposeDriveInput {
   title: string;
   description: string;
-  linkedReports: string[];
-  proposedDate: Date;
+  linkedReports: string[]; // reportIds
+  startDate: Date;         // ✅ was proposedDate
   taskBreakdown: {
-    id: string;
+    id?: string;
     title: string;
     description: string;
     comfort: SocializingLevel;
-    completed: boolean;
+    status?: TaskStatus;  
+    reportId: string;      
   }[];
-  status: Drive["status"];
+  status: DriveStatus;
 }
 
 interface AppStore {
@@ -102,18 +104,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
               {
                 id: crypto.randomUUID(),
                 driveId,
-                reportId: "",
+                reportId: d.reports && d.reports.length > 0 ? d.reports[0].reportId ?? "" : "", // pick a report from drive
                 comfort: "GROUP",
                 timeSlot: null,
                 status: "ASSIGNED" as TaskStatus,
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                report: {} as Report,
+                title: "",
+                description: "",
+                report: d.reports && d.reports.length > 0 ? d.reports[0]?.report ?? ({} as Report) : ({} as Report),
                 volunteerId: userId,
                 volunteer: null,
                 drive: d,
-                title: "",
-                description: "",
               } as Task,
             ],
           }
@@ -124,7 +126,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   voteOnReport: (reportId) => {
-    const { reports } = get();
+    const { reports, currentUser } = get();
+    if (!currentUser) return;
     set({
       reports: reports.map((r) =>
         r.id === reportId
@@ -135,7 +138,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
                 {
                   id: crypto.randomUUID(),
                   reportId,
-                  userId: "temp-user",
+                  userId: currentUser.id,
+                  user: currentUser,
                   createdAt: new Date(),
                 } as ReportVote,
               ],
@@ -157,8 +161,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
                 {
                   id: crypto.randomUUID(),
                   reportId,
+                  authorityId: "temp-authority",
                   status: "CONTACTED",
                   createdAt: new Date(),
+                  updatedAt: new Date(),
                 } as ReportAuthority,
               ],
             }
@@ -171,59 +177,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const { drives, reports } = get();
     const driveId = `drive-${Date.now()}`;
 
-    const tasks: Task[] = input.taskBreakdown.map((task, index) => ({
-      id: task.id || `task-${Date.now()}-${index}`,
-      driveId,
-      reportId: "",
-      report: {
-        id: "",
-        reporterId: "",
-        reporter: {} as User,
+    // build tasks
+    const tasks: Task[] = input.taskBreakdown.map((task, i) => {
+      const report = reports.find((r) => r.id === task.reportId);
+      return {
+        id: task.id ?? `task-${Date.now()}-${i}`,
+        driveId,
+        reportId: task.reportId,
+        report: report ?? ({} as Report),
         title: task.title,
         description: task.description,
-        status: "PENDING",
+        comfort: task.comfort,
+        timeSlot: null,
+        status: task.status ?? TaskStatus.OPEN,
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      volunteerId: null,
-      volunteer: null,
-      drive: null,
-      comfort: task.comfort,
-      timeSlot: null,
-      status: "OPEN" as TaskStatus,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      title: task.title,
-      description: task.description,
-    }));
+        volunteerId: null,
+        volunteer: null,
+        drive: null,
+      };
+    });
 
-    const driveReports: DriveReport[] = input.linkedReports.map((reportId) => ({
-      id: `dr-${reportId}-${driveId}`,
-      driveId,
-      drive: {} as Drive, // placeholder
-      reportId,
-      report:
-        reports.find((r) => r.id === reportId) ??
-        ({
-          id: reportId,
-          reporterId: "",
-          reporter: {} as User,
-          title: "",
-          description: "",
-          status: "PENDING",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        } as Report),
-      title: "",
-      description: "",
-    }));
+    // build drive-reports
+    const driveReports: DriveReport[] = input.linkedReports.map((reportId) => {
+      const report = reports.find((r) => r.id === reportId);
+      return {
+        id: `dr-${reportId}-${driveId}`,
+        driveId,
+        reportId,
+        drive: {} as Drive,
+        report: report ?? ({} as Report),
+        title: report?.title ?? "",
+        description: report?.description ?? "",
+      };
+    });
 
     const newDrive: Drive = {
       id: driveId,
       title: input.title,
       description: input.description,
       participant: 0,
-      startDate: input.proposedDate,
+      startDate: input.startDate,
       endDate: undefined,
       status: input.status,
       createdAt: new Date(),
@@ -234,7 +228,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       beautify: [],
       monitorings: [],
       votingOpenAt: new Date(),
-      votingCloseAt: new Date(input.proposedDate.getTime() + 7 * 24 * 60 * 60 * 1000),
+      votingCloseAt: new Date(input.startDate.getTime() + 7 * 24 * 60 * 60 * 1000),
       finalVoteCount: 0,
     };
 

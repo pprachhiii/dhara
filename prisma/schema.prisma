@@ -131,7 +131,8 @@ model Task {
   id          String           @id @default(cuid())
   reportId    String
   report      Report           @relation(fields: [reportId], references: [id])
-
+  title       String           @default("Untitled Task")
+  description String           @default("No description")
   driveId     String?
   drive       Drive?           @relation(fields: [driveId], references: [id])
 

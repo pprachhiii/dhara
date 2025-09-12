@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
 import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/volunteers/:id → volunteer profile (public for now)
 export async function GET(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
@@ -24,7 +23,6 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PATCH /api/volunteers/:id → update volunteer (requires auth)
 export async function PATCH(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;

@@ -8,7 +8,6 @@ type AuthResponse = {
   response?: NextResponse;
 };
 
-// GET /api/volunteers (public)
 export async function GET() {
   try {
     const volunteers = await prisma.volunteer.findMany({
@@ -22,7 +21,6 @@ export async function GET() {
   }
 }
 
-// POST /api/volunteers (protected)
 export async function POST(req: NextRequest) {
   const authResult = (await requireAuth(req)) as AuthResponse;
   if (authResult.error || !authResult.user) return authResult.response!;
@@ -49,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Volunteer registered", volunteer }, { status: 201 });
   } catch (err) {
-    console.error("POST /volunteers error:", err);
+    console.error("POST  error:", err);
     return NextResponse.json({ error: "Failed to register volunteer" }, { status: 500 });
   }
 }

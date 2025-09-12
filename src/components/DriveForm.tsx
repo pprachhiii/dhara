@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,47 +11,37 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProposeDriveInput, useAppStore } from "@/lib/stores";
-import { Users, Calendar, Plus, X, MapPin, CheckCircle } from "lucide-react";
+import { Users, Calendar, Plus, X, MapPin, CheckCircle, Send } from "lucide-react";
 import toast from "react-hot-toast";
-import { SocializingLevel } from "@/lib/types";
+import { SocializingLevel, Drive, Task, DriveReport } from "@/lib/types";
 
 interface TaskForm {
   title: string;
   description: string;
   comfortLevel: SocializingLevel;
+  reportId: string;
 }
 
 interface DriveFormData {
   title: string;
   description: string;
-  proposedDate: string;
+  startDate: string;
   linkedReports: string[];
   taskBreakdown: TaskForm[];
 }
 
-interface DriveTaskPayload {
-  title: string;
-  description: string;
-  comfort: SocializingLevel;
-}
-
-export interface BackendDriveResponse {
-  id: string;
-  title: string;
-  description: string;
-  proposedDate: string;
-  reports: { reportId: string }[];
-  taskBreakdown: DriveTaskPayload[];
-}
-
-export default function NewDrive() {
+export default function DriveForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const isEdit = Boolean(editId);
+
   const { reports, fetchReports, proposeDrive } = useAppStore();
 
   const [formData, setFormData] = useState<DriveFormData>({
     title: "",
     description: "",
-    proposedDate: "",
+    startDate: "",
     linkedReports: [],
     taskBreakdown: [],
   });
@@ -60,6 +50,7 @@ export default function NewDrive() {
     title: "",
     description: "",
     comfortLevel: SocializingLevel.GROUP,
+    reportId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +58,32 @@ export default function NewDrive() {
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
+
+  useEffect(() => {
+    if (!isEdit || !editId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/drives/${editId}`);
+        if (!res.ok) throw new Error("Failed to fetch drive");
+        const drive: Drive & { reports: DriveReport[]; tasks: Task[] } = await res.json();
+        setFormData({
+          title: drive.title,
+          description: drive.description ?? "",
+          startDate: drive.startDate ? new Date(drive.startDate).toISOString().slice(0, 16) : "",
+          linkedReports: drive.reports.map((r) => r.reportId),
+          taskBreakdown: drive.tasks.map((t) => ({
+            title: t.title,
+            description: t.description ?? "",
+            comfortLevel: t.comfort,
+            reportId: drive.reports[0]?.reportId ?? "",
+          })),
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load drive data");
+      }
+    })();
+  }, [isEdit, editId]);
 
   const eligibleReports = reports.filter((r) => r.status === "ELIGIBLE_DRIVE");
 
@@ -77,9 +94,7 @@ export default function NewDrive() {
   const handleReportToggle = (reportId: string) => {
     setFormData((prev) => ({
       ...prev,
-      linkedReports: prev.linkedReports.includes(reportId)
-        ? prev.linkedReports.filter((id) => id !== reportId)
-        : [...prev.linkedReports, reportId],
+      linkedReports: prev.linkedReports.includes(reportId) ? [] : [reportId],
     }));
   };
 
@@ -89,15 +104,22 @@ export default function NewDrive() {
       return;
     }
 
+    if (!formData.linkedReports[0]) {
+      toast.error("Please select a report first.");
+      return;
+    }
+
+    const reportId = formData.linkedReports[0];
     setFormData((prev) => ({
       ...prev,
-      taskBreakdown: [...prev.taskBreakdown, { ...currentTask }],
+      taskBreakdown: [...prev.taskBreakdown, { ...currentTask, reportId }],
     }));
 
     setCurrentTask({
       title: "",
       description: "",
       comfortLevel: SocializingLevel.GROUP,
+      reportId: "",
     });
   };
 
@@ -122,7 +144,7 @@ export default function NewDrive() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim() || !formData.description.trim() || !formData.proposedDate) {
+    if (!formData.title.trim() || !formData.description.trim() || !formData.startDate) {
       toast.error("Please fill in all required fields.");
       return;
     }
@@ -138,51 +160,50 @@ export default function NewDrive() {
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        proposedDate: formData.proposedDate,
+        startDate: formData.startDate,
         linkedReports: formData.linkedReports,
-        taskBreakdown: formData.taskBreakdown.map<DriveTaskPayload>((task) => ({
+        tasks: formData.taskBreakdown.map((task) => ({
           title: task.title,
           description: task.description,
           comfort: task.comfortLevel,
+          reportId: task.reportId,
         })),
       };
 
-      const response = await fetch("/api/drives", {
-        method: "POST",
+      const response = await fetch(isEdit ? `/api/drives/${editId}` : "/api/drives", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errData: { error?: string } = await response.json();
-        throw new Error(errData.error || "Failed to create drive");
+        throw new Error(errData.error || "Failed to submit drive");
       }
 
-      const createdDrive: BackendDriveResponse = await response.json();
+      if (!isEdit) {
+        const createdDrive: Drive & { reports: DriveReport[]; tasks: Task[] } = await response.json();
+        const driveToStore: ProposeDriveInput = {
+          title: createdDrive.title,
+          description: createdDrive.description ?? "",
+          startDate: new Date(createdDrive.startDate),
+          linkedReports: createdDrive.reports.map((r) => r.reportId),
+          status: "PLANNED",
+          taskBreakdown: createdDrive.tasks.map((task) => ({
+            id: crypto.randomUUID(),
+            title: task.title,
+            description: task.description ?? "",
+            comfort: task.comfort,
+            reportId: createdDrive.reports[0]?.reportId ?? "",
+            completed: false,
+          })),
+        };
+        proposeDrive(driveToStore);
+      }
 
-      // Correctly map reports to linkedReports to prevent undefined errors
-      const driveToStore: ProposeDriveInput = {
-        title: createdDrive.title,
-        description: createdDrive.description,
-        proposedDate: new Date(createdDrive.proposedDate),
-        linkedReports: createdDrive.reports.map((r) => r.reportId),
-        status: "PLANNED",
-        taskBreakdown: createdDrive.taskBreakdown.map((task) => ({
-          id: crypto.randomUUID(),
-          title: task.title,
-          description: task.description,
-          comfort: task.comfort,
-          completed: false,
-        })),
-      };
-
-      proposeDrive(driveToStore);
-
-
-
-      toast.success("Drive created successfully!");
+      toast.success(`Drive ${isEdit ? "updated" : "created"} successfully!`);
       router.push("/drives");
-    } catch (err: unknown) {
+    } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       toast.error(message);
       console.error(err);
@@ -194,18 +215,18 @@ export default function NewDrive() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="space-y-8">
-        {/* Header */}
         <div className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto forest-gradient rounded-full flex items-center justify-center">
             <Users className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Propose Community Drive</h1>
-            <p className="text-muted-foreground">Organize community action to address environmental issues</p>
+            <h1 className="text-3xl font-bold text-foreground">{isEdit ? "Edit Drive" : "Propose Community Drive"}</h1>
+            <p className="text-muted-foreground">
+              Organize community action to address environmental issues
+            </p>
           </div>
         </div>
 
-        {/* Form */}
         <Card className="shadow-elevated">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -215,7 +236,6 @@ export default function NewDrive() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Title */}
               <div className="space-y-2">
                 <Label htmlFor="title">Drive Title *</Label>
                 <Input
@@ -226,7 +246,6 @@ export default function NewDrive() {
                 />
               </div>
 
-              {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
@@ -238,25 +257,23 @@ export default function NewDrive() {
                 />
               </div>
 
-              {/* Proposed Date */}
               <div className="space-y-2">
-                <Label htmlFor="proposedDate">Proposed Date *</Label>
+                <Label htmlFor="startDate">Start Date *</Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="proposedDate"
+                    id="startDate"
                     type="datetime-local"
-                    value={formData.proposedDate}
-                    onChange={(e) => handleInputChange("proposedDate", e.target.value)}
+                    value={formData.startDate}
+                    onChange={(e) => handleInputChange("startDate", e.target.value)}
                     className="pl-10"
                     min={new Date().toISOString().slice(0, 16)}
                   />
                 </div>
               </div>
 
-              {/* Linked Reports */}
               <div className="space-y-2">
-                <Label>Linked Reports ({formData.linkedReports.length} selected)</Label>
+                <Label>Linked Report</Label>
                 {eligibleReports.length > 0 ? (
                   <div className="space-y-3 max-h-60 overflow-y-auto border rounded-lg p-3">
                     {eligibleReports.map((report) => (
@@ -287,32 +304,24 @@ export default function NewDrive() {
                 )}
               </div>
 
-              {/* Task Breakdown */}
               <div className="space-y-4">
                 <Label>Task Breakdown ({formData.taskBreakdown.length} tasks)</Label>
 
-                {/* Add Task */}
                 <Card className="bg-muted/20">
                   <CardContent className="pt-4">
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="taskTitle" className="text-xs font-medium">
-                            Task Title
-                          </Label>
+                          <Label htmlFor="taskTitle" className="text-xs font-medium">Task Title</Label>
                           <Input
                             id="taskTitle"
                             placeholder="e.g., Waste Collection"
                             value={currentTask.title}
-                            onChange={(e) =>
-                              setCurrentTask((prev) => ({ ...prev, title: e.target.value }))
-                            }
+                            onChange={(e) => setCurrentTask((prev) => ({ ...prev, title: e.target.value }))}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="taskComfort" className="text-xs font-medium">
-                            Comfort Level
-                          </Label>
+                          <Label htmlFor="taskComfort" className="text-xs font-medium">Comfort Level</Label>
                           <Select
                             value={currentTask.comfortLevel}
                             onValueChange={(value: SocializingLevel) =>
@@ -332,16 +341,12 @@ export default function NewDrive() {
                       </div>
 
                       <div>
-                        <Label htmlFor="taskDescription" className="text-xs font-medium">
-                          Description
-                        </Label>
+                        <Label htmlFor="taskDescription" className="text-xs font-medium">Description</Label>
                         <Textarea
                           id="taskDescription"
                           placeholder="Describe this task..."
                           value={currentTask.description}
-                          onChange={(e) =>
-                            setCurrentTask((prev) => ({ ...prev, description: e.target.value }))
-                          }
+                          onChange={(e) => setCurrentTask((prev) => ({ ...prev, description: e.target.value }))}
                           rows={2}
                         />
                       </div>
@@ -354,7 +359,6 @@ export default function NewDrive() {
                   </CardContent>
                 </Card>
 
-                {/* Task List */}
                 {formData.taskBreakdown.length > 0 && (
                   <div className="space-y-2">
                     {formData.taskBreakdown.map((task, index) => (
@@ -362,9 +366,7 @@ export default function NewDrive() {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <span className="font-medium text-sm">{task.title}</span>
-                            <Badge className={getComfortLevelColor(task.comfortLevel)}>
-                              {task.comfortLevel}
-                            </Badge>
+                            <Badge className={getComfortLevelColor(task.comfortLevel)}>{task.comfortLevel}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                         </div>
@@ -377,10 +379,19 @@ export default function NewDrive() {
                 )}
               </div>
 
-              {/* Submit */}
               <div className="pt-4">
                 <Button type="submit" className="w-full forest-gradient text-white" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating Drive..." : "Create Drive"}
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      {isEdit ? "Updating Drive..." : "Creating Drive..."}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <Send className="h-4 w-4 mr-2" />
+                      {isEdit ? "Update Drive" : "Create Drive"}
+                    </div>
+                  )}
                 </Button>
               </div>
             </form>

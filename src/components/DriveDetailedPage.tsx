@@ -120,7 +120,7 @@ export function DriveDetailPage({ drive, onClose }: DriveDetailPageProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/drives/edit?id=${drive.id}`)}
+              onClick={() => router.push(`/drives/new?id=${drive.id}`)}
             >
               <Edit className="h-4 w-4 mr-1" /> Edit
             </Button>

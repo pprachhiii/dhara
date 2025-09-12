@@ -146,8 +146,8 @@ export default function CreateForm<T extends FormState>({
 
     const endpointMap: Record<ModelType, string> = {
       Volunteer: isEdit
-        ? `/api/volunteers/${initialValues?.id}`
-        : "/api/volunteers",
+        ? `/api/form?model=Volunteer/${initialValues?.id}`
+        : "/api/form?model=Volunteer",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
       Authority: isEdit
         ? `/api/authority/${initialValues?.id}`

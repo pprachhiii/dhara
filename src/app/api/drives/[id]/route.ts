@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
 import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/drives/:id → public
+// -------------------- GET /api/drives/:id --------------------
 export async function GET(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
@@ -11,15 +11,18 @@ export async function GET(request: NextRequest, context: Context) {
     const drive = await prisma.drive.findUnique({
       where: { id },
       include: {
-        reports: { include: { report: true } },
-        votes: true,
+        reports: { include: { report: true } }, // includes linked Report
         tasks: true,
+        votes: true,
         beautify: true,
         monitorings: true,
       },
     });
 
-    if (!drive) return NextResponse.json({ error: "Drive not found" }, { status: 404 });
+    if (!drive) {
+      return NextResponse.json({ error: "Drive not found" }, { status: 404 });
+    }
+
     return NextResponse.json(drive);
   } catch (err) {
     console.error("Error fetching drive:", err);
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PATCH /api/drives/:id → update drive (requires auth)
+// -------------------- PATCH /api/drives/:id --------------------
 export async function PATCH(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
@@ -40,11 +43,11 @@ export async function PATCH(request: NextRequest, context: Context) {
       where: { id },
       data: {
         title: typeof data.title === "string" ? data.title : undefined,
-        description: data.description ?? undefined,
+        description: typeof data.description === "string" ? data.description : undefined,
         participant: Number.isFinite(Number(data.participant)) ? Number(data.participant) : undefined,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        status: data.status, // DriveStatus enum
+        status: data.status, 
       },
       include: {
         reports: { include: { report: true } },
@@ -55,24 +58,37 @@ export async function PATCH(request: NextRequest, context: Context) {
       },
     });
 
-    return NextResponse.json({ message: "Drive updated successfully", drive: updatedDrive });
+    return NextResponse.json({
+      message: "Drive updated successfully",
+      drive: updatedDrive,
+    });
   } catch (err) {
     console.error("Error updating drive:", err);
     return NextResponse.json({ error: "Drive not found or update failed" }, { status: 404 });
   }
 }
 
-// DELETE /api/drives/:id → delete drive (requires auth)
+// -------------------- DELETE /api/drives/:id --------------------
 export async function DELETE(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
 
   try {
     const { id } = await context.params;
+
+    // delete dependent rows
+    await prisma.task.deleteMany({ where: { driveId: id } });
+    await prisma.driveReport.deleteMany({ where: { driveId: id } });
+    await prisma.driveVote.deleteMany({ where: { driveId: id } });
+    await prisma.beautification.deleteMany({ where: { driveId: id } });
+    await prisma.monitoring.deleteMany({ where: { driveId: id } });
+
+    // delete the drive itself
     await prisma.drive.delete({ where: { id } });
+
     return NextResponse.json({ message: "Drive deleted successfully" });
   } catch (err) {
     console.error("Error deleting drive:", err);
-    return NextResponse.json({ error: "Drive not found" }, { status: 404 });
+    return NextResponse.json({ error: "Failed to delete drive" }, { status: 500 });
   }
 }
