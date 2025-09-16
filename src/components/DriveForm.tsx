@@ -13,12 +13,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ProposeDriveInput, useAppStore } from "@/lib/stores";
 import { Users, Calendar, Plus, X, MapPin, CheckCircle, Send } from "lucide-react";
 import toast from "react-hot-toast";
-import { SocializingLevel, Drive, Task, DriveReport } from "@/lib/types";
+import { EngagementLevel, Drive, Task, DriveReport } from "@/lib/types";
 
 interface TaskForm {
   title: string;
   description: string;
-  comfortLevel: SocializingLevel;
+  comfortLevel: EngagementLevel;
   reportId: string;
 }
 
@@ -49,7 +49,7 @@ export default function DriveForm() {
   const [currentTask, setCurrentTask] = useState<TaskForm>({
     title: "",
     description: "",
-    comfortLevel: SocializingLevel.GROUP,
+    comfortLevel: EngagementLevel.GROUP,
     reportId: "",
   });
 
@@ -74,7 +74,7 @@ export default function DriveForm() {
           taskBreakdown: drive.tasks.map((t) => ({
             title: t.title,
             description: t.description ?? "",
-            comfortLevel: t.comfort,
+            comfortLevel: t.engagement,
             reportId: drive.reports[0]?.reportId ?? "",
           })),
         });
@@ -85,7 +85,7 @@ export default function DriveForm() {
     })();
   }, [isEdit, editId]);
 
-  const eligibleReports = reports.filter((r) => r.status === "ELIGIBLE_DRIVE");
+  const eligibleReports = reports.filter((r) => r.status === "ELIGIBLE_FOR_DRIVE");
 
   const handleInputChange = (field: keyof DriveFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -118,7 +118,7 @@ export default function DriveForm() {
     setCurrentTask({
       title: "",
       description: "",
-      comfortLevel: SocializingLevel.GROUP,
+      comfortLevel: EngagementLevel.GROUP,
       reportId: "",
     });
   };
@@ -130,13 +130,13 @@ export default function DriveForm() {
     }));
   };
 
-  const getComfortLevelColor = (level: SocializingLevel) => {
+  const getComfortLevelColor = (level: EngagementLevel) => {
     switch (level) {
-      case SocializingLevel.SOLO:
+      case EngagementLevel.INDIVIDUAL:
         return "bg-blue-100 text-blue-800";
-      case SocializingLevel.DUAL:
+      case EngagementLevel.PAIR:
         return "bg-yellow-100 text-yellow-800";
-      case SocializingLevel.GROUP:
+      case EngagementLevel.GROUP:
         return "bg-green-100 text-green-800";
     }
   };
@@ -193,7 +193,7 @@ export default function DriveForm() {
             id: crypto.randomUUID(),
             title: task.title,
             description: task.description ?? "",
-            comfort: task.comfort,
+            comfort: task.engagement,
             reportId: createdDrive.reports[0]?.reportId ?? "",
             completed: false,
           })),
@@ -324,7 +324,7 @@ export default function DriveForm() {
                           <Label htmlFor="taskComfort" className="text-xs font-medium">Comfort Level</Label>
                           <Select
                             value={currentTask.comfortLevel}
-                            onValueChange={(value: SocializingLevel) =>
+                            onValueChange={(value: EngagementLevel) =>
                               setCurrentTask((prev) => ({ ...prev, comfortLevel: value }))
                             }
                           >
@@ -332,9 +332,9 @@ export default function DriveForm() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value={SocializingLevel.SOLO}>Solo Work</SelectItem>
-                              <SelectItem value={SocializingLevel.DUAL}>Low Social Interaction</SelectItem>
-                              <SelectItem value={SocializingLevel.GROUP}>Group Activity</SelectItem>
+                              <SelectItem value={EngagementLevel.INDIVIDUAL}>Solo Work</SelectItem>
+                              <SelectItem value={EngagementLevel.PAIR}>Low Social Interaction</SelectItem>
+                              <SelectItem value={EngagementLevel.GROUP}>Group Activity</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

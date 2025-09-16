@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await prisma.driveVote.findFirst({
+    // Check for existing vote
+    const existing = await prisma.vote.findFirst({
       where: { userId: auth.user.id, driveId },
     });
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const vote = await prisma.driveVote.create({
+    // Create new vote
+    const vote = await prisma.vote.create({
       data: { userId: auth.user.id, driveId },
     });
 

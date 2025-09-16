@@ -4,17 +4,17 @@ import { Context } from "@/lib/context";
 import { requireAuth } from "@/lib/serverAuth";
 
 // -------------------- GET /api/drives/:id --------------------
-export async function GET(request: NextRequest, context: Context) {
+export async function GET(_request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
     const drive = await prisma.drive.findUnique({
       where: { id },
       include: {
-        reports: { include: { report: true } }, // includes linked Report
+        reports: { include: { report: true } },
         tasks: true,
-        votes: true,
-        beautify: true,
+        unifiedVotes: { include: { user: true } },
+        enhancements: true,
         monitorings: true,
       },
     });
@@ -47,21 +47,18 @@ export async function PATCH(request: NextRequest, context: Context) {
         participant: Number.isFinite(Number(data.participant)) ? Number(data.participant) : undefined,
         startDate: data.startDate ? new Date(data.startDate) : undefined,
         endDate: data.endDate ? new Date(data.endDate) : undefined,
-        status: data.status, 
+        status: data.status,
       },
       include: {
         reports: { include: { report: true } },
-        votes: true,
+        unifiedVotes: { include: { user: true } },
         tasks: true,
-        beautify: true,
+        enhancements: true,
         monitorings: true,
       },
     });
 
-    return NextResponse.json({
-      message: "Drive updated successfully",
-      drive: updatedDrive,
-    });
+    return NextResponse.json({ message: "Drive updated successfully", drive: updatedDrive });
   } catch (err) {
     console.error("Error updating drive:", err);
     return NextResponse.json({ error: "Drive not found or update failed" }, { status: 404 });
@@ -79,8 +76,8 @@ export async function DELETE(request: NextRequest, context: Context) {
     // delete dependent rows
     await prisma.task.deleteMany({ where: { driveId: id } });
     await prisma.driveReport.deleteMany({ where: { driveId: id } });
-    await prisma.driveVote.deleteMany({ where: { driveId: id } });
-    await prisma.beautification.deleteMany({ where: { driveId: id } });
+    await prisma.vote.deleteMany({ where: { driveId: id } });
+    await prisma.enhancement.deleteMany({ where: { driveId: id } });
     await prisma.monitoring.deleteMany({ where: { driveId: id } });
 
     // delete the drive itself

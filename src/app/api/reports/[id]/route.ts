@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: Context) {
       include: {
         reportAuthorities: { include: { authority: true } },
         drives: { include: { drive: true } },
-        votes: true,
+        unifiedVotes: true,
         tasks: true,
         monitorings: true,
       },

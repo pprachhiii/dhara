@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users } from "lucide-react";
 import { Report, ReportStatus, Task, ReportAuthority } from "@/lib/types";
+import Link from "next/link";
 
 interface ReportCardProps {
   report: Report & {
-    votes?: Report["votes"];
+    votes?: Report["unifiedVotes"];
     tasks?: Task[];
     reportAuthorities?: ReportAuthority[];
     drives?: { id: string }[]; // drives linked to the report
@@ -27,11 +28,16 @@ export function ReportCard({
     const statusConfig: Record<ReportStatus, { label: string; className: string }> = {
       PENDING: { label: "Pending", className: "phase-pending" },
       AUTHORITY_CONTACTED: { label: "Authority Contacted", className: "phase-progress" },
-      ELIGIBLE_DRIVE: { label: "Eligible for Drive", className: "phase-voting" },
+      RESOLVED_BY_AUTHORITY: { label: "Resolved by Authority", className: "phase-progress" },
+      ELIGIBLE_FOR_VOTE: { label: "Eligible for Vote", className: "phase-voting" },
       VOTING_FINALIZED: { label: "Voting Finalized", className: "phase-progress" },
+      ELIGIBLE_FOR_DRIVE: { label: "Eligible for Drive", className: "phase-voting" },
+      DRIVE_FINALIZED: { label: "Drive Finalized", className: "phase-progress" },
       IN_PROGRESS: { label: "In Progress", className: "phase-progress" },
+      UNDER_MONITORING: { label: "Under Monitoring", className: "phase-progress" },
       RESOLVED: { label: "Resolved", className: "phase-completed" },
     };
+
     return <Badge className={statusConfig[status].className}>{statusConfig[status].label}</Badge>;
   };
 
@@ -77,7 +83,7 @@ export function ReportCard({
           {report.tasks && report.tasks.length > 0 && (
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
-              <span>{report.tasks.filter((t) => t.volunteerId).length} volunteers assigned</span>
+              <span>{report.tasks.filter((t) => t.id).length} s assigned</span>
             </div>
           )}
         </div>
@@ -142,7 +148,7 @@ export function ReportCard({
                 );
 
               // Drive Phase
-              case "ELIGIBLE_DRIVE":
+              case "ELIGIBLE_FOR_DRIVE":
                 if (driveCount === 1 || driveCount === 0 ) {
                   return (
                     <Button
@@ -167,12 +173,15 @@ export function ReportCard({
               // Voting Finalized
               case "VOTING_FINALIZED":
                 return (
-                  <Button
-                    className="bg-blue-500 hover:bg-blue-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/form?model=Volunteer")}
-                  >
-                    Volunteer
-                  </Button>
+                  <Link href="/tasks">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="shadow-gentle hover:shadow-accent transition-smooth"
+                    >
+                      Tasks
+                    </Button>
+                  </Link>
                 );
 
               // In Progress: show both Task + Volunteer

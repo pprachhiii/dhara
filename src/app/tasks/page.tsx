@@ -12,13 +12,15 @@ import {
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
-import { Task, TaskStatus, SocializingLevel } from "@/lib/types";
+import { Task, TaskStatus, EngagementLevel } from "@/lib/types";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
-  const [comfortFilter, setComfortFilter] = useState<SocializingLevel | "">("");
+  const [engagementFilter, setEngagementFilter] = useState<EngagementLevel | "">(
+    ""
+  );
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [creatingTask, setCreatingTask] = useState(false);
@@ -26,21 +28,21 @@ export default function TasksPage() {
   const loadTasks = useCallback(async () => {
     const query = new URLSearchParams();
     if (statusFilter) query.append("status", statusFilter);
-    if (comfortFilter) query.append("comfort", comfortFilter);
+    // backend expects key "comfort" for this filter (keeps compatibility)
+    if (engagementFilter) query.append("comfort", engagementFilter);
     if (searchQuery) query.append("search", searchQuery);
 
     try {
-      const data: Task[] = await fetch(`/api/tasks?${query.toString()}`).then(
-        (res) => res.json()
-      );
+      const res = await fetch(`/api/tasks?${query.toString()}`);
+      const data = (await res.json()) as Task[];
       setTasks(data);
     } catch {
       toast.error("Failed to load tasks");
     }
-  }, [statusFilter, comfortFilter, searchQuery]);
+  }, [statusFilter, engagementFilter, searchQuery]);
 
   useEffect(() => {
-    loadTasks();
+    void loadTasks();
   }, [loadTasks]);
 
   async function refreshTasks() {
@@ -54,6 +56,9 @@ export default function TasksPage() {
     setSelectedTask(null);
   }
 
+  const statusValues = Object.values(TaskStatus) as TaskStatus[];
+  const engagementValues = Object.values(EngagementLevel) as EngagementLevel[];
+
   return (
     <div className="h-screen overflow-y-auto p-6 relative">
       {/* Header */}
@@ -65,7 +70,7 @@ export default function TasksPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6 items-center">
         <Input
-          placeholder="Search by report/drive/form?model=Volunteer"
+          placeholder="Search by report/drive"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-xs"
@@ -74,14 +79,16 @@ export default function TasksPage() {
         {/* Status Filter */}
         <Select
           value={statusFilter || "all"}
-          onValueChange={(v) => setStatusFilter(v === "all" ? "" : (v as TaskStatus))}
+          onValueChange={(v) =>
+            setStatusFilter(v === "all" ? "" : (v as TaskStatus))
+          }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            {Object.values(TaskStatus).map((s) => (
+            {statusValues.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
               </SelectItem>
@@ -89,26 +96,25 @@ export default function TasksPage() {
           </SelectContent>
         </Select>
 
-        {/* Comfort Filter */}
+        {/* Engagement Filter */}
         <Select
-          value={comfortFilter || "all"}
+          value={engagementFilter || "all"}
           onValueChange={(v) =>
-            setComfortFilter(v === "all" ? "" : (v as SocializingLevel))
+            setEngagementFilter(v === "all" ? "" : (v as EngagementLevel))
           }
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="All Comfort" />
+            <SelectValue placeholder="All Engagement" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Comfort</SelectItem>
-            {Object.values(SocializingLevel).map((c) => (
+            <SelectItem value="all">All Engagement</SelectItem>
+            {engagementValues.map((c) => (
               <SelectItem key={c} value={c}>
                 {c}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
       </div>
 
       {/* Tasks Table */}
@@ -117,7 +123,7 @@ export default function TasksPage() {
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 border">Status</th>
-              <th className="px-4 py-2 border">Comfort</th>
+              <th className="px-4 py-2 border">Engagement</th>
               <th className="px-4 py-2 border">Time Slot</th>
               <th className="px-4 py-2 border">Report</th>
               <th className="px-4 py-2 border">Drive</th>
@@ -129,13 +135,15 @@ export default function TasksPage() {
             {tasks.map((t) => (
               <tr key={t.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 border">{t.status}</td>
-                <td className="px-4 py-2 border">{t.comfort ?? "-"}</td>
+                <td className="px-4 py-2 border">{t.engagement ?? "-"}</td>
                 <td className="px-4 py-2 border">
                   {t.timeSlot ? new Date(t.timeSlot).toLocaleString() : "-"}
                 </td>
                 <td className="px-4 py-2 border">{t.report?.title ?? "-"}</td>
                 <td className="px-4 py-2 border">{t.drive?.title ?? "-"}</td>
-                <td className="px-4 py-2 border">{t.volunteer?.user.name ?? "-"}</td>
+                <td className="px-4 py-2 border">
+                  {t.volunteer?.user?.name ?? "-"}
+                </td>
                 <td className="px-4 py-2 border flex gap-2">
                   <Button size="sm" onClick={() => setSelectedTask(t)}>
                     See
@@ -157,6 +165,13 @@ export default function TasksPage() {
                 </td>
               </tr>
             ))}
+            {tasks.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                  No tasks found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -173,7 +188,7 @@ export default function TasksPage() {
             </button>
             <h2 className="text-2xl font-bold mb-2">Task</h2>
             <p>Status: {selectedTask.status}</p>
-            <p>Comfort: {selectedTask.comfort ?? "-"}</p>
+            <p>Engagement: {selectedTask.engagement ?? "-"}</p>
             <p>
               Time Slot:{" "}
               {selectedTask.timeSlot
@@ -182,7 +197,7 @@ export default function TasksPage() {
             </p>
             <p>Report: {selectedTask.report?.title ?? "-"}</p>
             <p>Drive: {selectedTask.drive?.title ?? "-"}</p>
-            <p>Volunteer: {selectedTask.volunteer?.user.name ?? "-"}</p>
+            <p>Volunteer: {selectedTask.volunteer?.user?.name ?? "-"}</p>
 
             <div className="mt-6 flex justify-end gap-2">
               <Button
@@ -218,7 +233,7 @@ export default function TasksPage() {
               initialValues={{
                 id: editingTask.id,
                 status: editingTask.status,
-                comfort: editingTask.comfort,
+                engagement: editingTask.engagement,
                 timeSlot: editingTask.timeSlot
                   ? new Date(editingTask.timeSlot).toISOString()
                   : undefined,

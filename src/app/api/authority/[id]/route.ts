@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { AuthorityType } from "@prisma/client";
+import { AuthorityCategory, AuthorityRole } from "@prisma/client";
 import { Context } from "@/lib/context";
 import { requireAuth } from "@/lib/serverAuth";
 
@@ -14,7 +14,9 @@ export async function GET(request: NextRequest, context: Context) {
       include: { reportAuthorities: { include: { report: true } } },
     });
 
-    if (!authority) return NextResponse.json({ error: "Authority not found" }, { status: 404 });
+    if (!authority) {
+      return NextResponse.json({ error: "Authority not found" }, { status: 404 });
+    }
     return NextResponse.json(authority);
   } catch (err) {
     console.error("Error fetching authority:", err);
@@ -22,7 +24,7 @@ export async function GET(request: NextRequest, context: Context) {
   }
 }
 
-// PUT /api/authority/:id → update authority (requires auth)
+// PATCH /api/authority/:id → update authority (requires auth)
 export async function PATCH(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) return authResult.response!;
@@ -31,15 +33,20 @@ export async function PATCH(request: NextRequest, context: Context) {
     const { id } = await context.params;
     const data = await request.json();
 
-    if (data.type && !Object.values(AuthorityType).includes(data.type)) {
-      return NextResponse.json({ error: "Invalid authority type" }, { status: 400 });
+    if (data.category && !Object.values(AuthorityCategory).includes(data.category)) {
+      return NextResponse.json({ error: "Invalid authority category" }, { status: 400 });
+    }
+
+    if (data.role && !Object.values(AuthorityRole).includes(data.role)) {
+      return NextResponse.json({ error: "Invalid authority role" }, { status: 400 });
     }
 
     const updatedAuthority = await prisma.authority.update({
       where: { id },
       data: {
         ...(data.name && { name: data.name }),
-        ...(data.type && { type: data.type as AuthorityType }),
+        ...(data.category && { category: data.category as AuthorityCategory }),
+        ...(data.role && { role: data.role as AuthorityRole }),
         ...(data.city && { city: data.city }),
         region: data.region ?? null,
         email: data.email ?? null,
@@ -49,7 +56,10 @@ export async function PATCH(request: NextRequest, context: Context) {
       },
     });
 
-    return NextResponse.json({ message: "Authority updated successfully", authority: updatedAuthority });
+    return NextResponse.json({
+      message: "Authority updated successfully",
+      authority: updatedAuthority,
+    });
   } catch (err) {
     console.error("Error updating authority:", err);
     return NextResponse.json({ error: "Authority not found" }, { status: 404 });
@@ -63,7 +73,6 @@ export async function DELETE(request: NextRequest, context: Context) {
 
   try {
     const { id } = await context.params;
-
     await prisma.authority.delete({ where: { id } });
 
     return NextResponse.json({ message: "Authority deleted successfully" });

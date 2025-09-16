@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TaskStatus, SocializingLevel } from "@prisma/client";
+import { TaskStatus, EngagementLevel } from "@prisma/client";
 import { requireAuth } from "@/lib/serverAuth";
 
 type AuthResponse = {
@@ -13,24 +13,24 @@ type AuthResponse = {
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const statusParam = url.searchParams.get("status");
-  const comfortParam = url.searchParams.get("comfort");
+  const engagementParam = url.searchParams.get("engagement");
 
   const status =
     statusParam && Object.values(TaskStatus).includes(statusParam as TaskStatus)
       ? (statusParam as TaskStatus)
       : undefined;
 
-  const comfort =
-    comfortParam &&
-    Object.values(SocializingLevel).includes(comfortParam as SocializingLevel)
-      ? (comfortParam as SocializingLevel)
+  const engagement =
+    engagementParam &&
+    Object.values(EngagementLevel).includes(engagementParam as EngagementLevel)
+      ? (engagementParam as EngagementLevel)
       : undefined;
 
   try {
     const tasks = await prisma.task.findMany({
       where: {
         ...(status ? { status } : {}),
-        ...(comfort ? { comfort } : {}),
+        ...(engagement ? { engagement } : {}),
       },
       orderBy: { createdAt: "desc" },
       include: {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         reportId: data.reportId,
         driveId: data.driveId ?? null,
         volunteerId: data.volunteerId ?? null,
-        comfort: data.comfort as SocializingLevel,
+        engagement: data.engagement as EngagementLevel,
         timeSlot: data.timeSlot ? new Date(data.timeSlot) : null,
         status: (data.status as TaskStatus) ?? TaskStatus.OPEN,
       },
@@ -81,4 +81,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
   }
 }
-

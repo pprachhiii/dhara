@@ -8,43 +8,41 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import {
   TaskStatus,
-  SocializingLevel,
-  AuthorityType,
+  EngagementLevel,
+  AuthorityCategory,
 } from "@/lib/types";
 
 // ------------ Types ------------
 type ModelType = "Task" | "Authority" | "Volunteer";
 
-// Specific form types
 interface VolunteerForm {
   id?: string;
   userId: string;
-  phone: string;
+  phone?: string;
 }
 
 interface TaskForm {
   id?: string;
-  reportId: string;
-  driveId: string;
-  volunteerId: string;
-  comfort: SocializingLevel;
+  reportId?: string;
+  driveId?: string;
+  volunteerId?: string;
+  engagement: EngagementLevel;
   status: TaskStatus;
-  timeSlot: string | Date;
+  timeSlot?: string | Date;
 }
 
 interface AuthorityForm {
   id?: string;
   name: string;
-  type: AuthorityType;
+  category: AuthorityCategory;
   city: string;
-  region: string;
-  email: string;
-  phone: string;
+  region?: string;
+  email?: string;
+  phone?: string;
   website?: string;
-  active: boolean | string; // string for select, normalized before submit
+  active: boolean | string;
 }
 
-// Union type
 type FormState = VolunteerForm | TaskForm | AuthorityForm;
 
 interface CreateFormProps<T extends FormState> {
@@ -56,9 +54,9 @@ interface CreateFormProps<T extends FormState> {
 }
 
 // ------------ Constants ------------
-const SOCIALIZING_LEVELS: SocializingLevel[] = Object.values(SocializingLevel);
+const ENGAGEMENT_LEVELS: EngagementLevel[] = Object.values(EngagementLevel);
 const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus);
-const AUTHORITY_TYPES: AuthorityType[] = Object.values(AuthorityType);
+const AUTHORITY_CATEGORIES: AuthorityCategory[] = Object.values(AuthorityCategory);
 
 interface Field {
   name: string;
@@ -84,11 +82,10 @@ export default function CreateForm<T extends FormState>({
 
   const isEdit = Boolean(initialValues?.id);
 
-  // Format dates for datetime-local inputs
   const formatDateTime = (date: string | Date | undefined) => {
     if (!date) return "";
     const d = typeof date === "string" ? new Date(date) : date;
-    return d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:mm
+    return d.toISOString().slice(0, 16);
   };
 
   const getFields = (): Field[] => {
@@ -104,10 +101,10 @@ export default function CreateForm<T extends FormState>({
           { name: "driveId", label: "Drive ID", type: "text" },
           { name: "volunteerId", label: "Volunteer ID", type: "text" },
           {
-            name: "comfort",
-            label: "Comfort Level",
+            name: "engagement",
+            label: "Engagement",
             type: "select",
-            options: SOCIALIZING_LEVELS,
+            options: ENGAGEMENT_LEVELS,
           },
           {
             name: "status",
@@ -115,16 +112,12 @@ export default function CreateForm<T extends FormState>({
             type: "select",
             options: TASK_STATUSES,
           },
-          {
-            name: "timeSlot",
-            label: "Time Slot (DateTime)",
-            type: "datetime-local",
-          },
+          { name: "timeSlot", label: "Time Slot", type: "datetime-local" },
         ];
       case "Authority":
         return [
           { name: "name", label: "Name", type: "text" },
-          { name: "type", label: "Type", type: "select", options: AUTHORITY_TYPES },
+          { name: "category", label: "Category", type: "select", options: AUTHORITY_CATEGORIES },
           { name: "city", label: "City", type: "text" },
           { name: "region", label: "Region", type: "text" },
           { name: "email", label: "Email", type: "text" },
@@ -149,21 +142,16 @@ export default function CreateForm<T extends FormState>({
         ? `/api/form?model=Volunteer/${initialValues?.id}`
         : "/api/form?model=Volunteer",
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
-      Authority: isEdit
-        ? `/api/authority/${initialValues?.id}`
-        : "/api/authority",
+      Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
     };
 
-    // Prepare form data before sending
     const submitData: Record<string, unknown> = { ...form };
 
-    // Convert boolean
     if ("active" in submitData) {
       submitData.active =
         submitData.active === "true" || submitData.active === true;
     }
 
-    // Convert datetime-local back to Date
     if ("timeSlot" in submitData && submitData.timeSlot) {
       submitData.timeSlot = new Date(submitData.timeSlot as string);
     }
@@ -177,7 +165,7 @@ export default function CreateForm<T extends FormState>({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Request failed");
+        throw new Error((err as { error?: string }).error || "Request failed");
       }
 
       toast.success(`${model} ${isEdit ? "updated" : "created"} successfully!`);

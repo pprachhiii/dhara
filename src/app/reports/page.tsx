@@ -14,7 +14,7 @@ import { ReportCard } from "@/components/ReportCard";
 import { useAppStore } from "@/lib/stores";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
-import { ReportStatus, TaskStatus, SocializingLevel } from "@prisma/client";
+import { ReportStatus, TaskStatus, EngagementLevel } from "@prisma/client";
 import { ReportDetailPage } from "@/components/ReportDetailedPage";
 import { Report } from "@/lib/types";
 
@@ -59,7 +59,7 @@ export default function Reports() {
         case "recent":
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case "votes":
-          return (b.votes?.length ?? 0) - (a.votes?.length ?? 0);
+          return (b.unifiedVotes?.length ?? 0) - (a.unifiedVotes?.length ?? 0);
         case "status":
           return a.status.localeCompare(b.status);
         default:
@@ -69,7 +69,7 @@ export default function Reports() {
 
   const mapReportForCard = (report: Report): Report => ({
     ...report,
-    votes: report.votes?.map((v) => ({
+    unifiedVotes: report.unifiedVotes?.map((v) => ({
       id: v.id,
       userId: v.userId,
       user: v.user,
@@ -84,7 +84,7 @@ export default function Reports() {
       volunteerId: t.volunteerId ?? null,
       reportId: t.reportId,
       report: t.report,
-      comfort: t.comfort ?? SocializingLevel.SOLO,
+      engagement: t.engagement ?? EngagementLevel.INDIVIDUAL,
       status: t.status ?? TaskStatus.OPEN,
       timeSlot: t.timeSlot ?? null,
       createdAt: t.createdAt,
@@ -111,7 +111,7 @@ export default function Reports() {
   // ---- SECTION FILTERS ----
 
   const createDriveReports: Report[] = filteredReports.filter(
-    (r) => r.status === ReportStatus.ELIGIBLE_DRIVE
+    (r) => r.status === ReportStatus.ELIGIBLE_FOR_DRIVE
   );
 
   const authorityContactReports: Report[] = filteredReports.filter(

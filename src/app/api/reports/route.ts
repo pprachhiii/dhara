@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     include: {
       reportAuthorities: { include: { authority: true } },
       drives: { include: { drive: true } },
-      votes: true,
+      unifiedVotes: true,
       monitorings: true,
-      _count: { select: { votes: true } },
+      _count: { select: { unifiedVotes: true } },
     },
   });
 
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     return {
       ...report,
       escalationType,
-      voteCount: report._count.votes,
+      voteCount: report._count.unifiedVotes,
     };
   });
 

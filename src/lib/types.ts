@@ -1,33 +1,63 @@
 // ----------------- Enums -----------------
-
 export type UserRole = "USER" | "VOLUNTEER";
+
 export type ReportStatus =
   | "PENDING"
   | "AUTHORITY_CONTACTED"
-  | "ELIGIBLE_DRIVE"
+  | "RESOLVED_BY_AUTHORITY"
+  | "ELIGIBLE_FOR_VOTE"
   | "VOTING_FINALIZED"
+  | "ELIGIBLE_FOR_DRIVE"
+  | "DRIVE_FINALIZED"
   | "IN_PROGRESS"
+  | "UNDER_MONITORING"
   | "RESOLVED";
+
 export enum TaskStatus {
-  OPEN="OPEN",
-  ASSIGNED= "ASSIGNED", 
-  DONE="DONE"
-} 
-export type DriveStatus = "PLANNED" | "VOTING_FINALIZED" | "ONGOING" | "COMPLETED";
-export enum SocializingLevel {
-  SOLO="SOLO", 
-  DUAL= "DUAL", 
-  GROUP="GROUP"
+  OPEN = "OPEN",
+  ASSIGNED = "ASSIGNED",
+  COMPLETED = "COMPLETED"
 }
-export enum AuthorityType {
+
+export type DriveStatus = "PLANNED" | "VOTING_FINALIZED" | "ONGOING" | "COMPLETED";
+
+export enum EngagementLevel {
+  INDIVIDUAL = "INDIVIDUAL",
+  PAIR = "PAIR",
+  GROUP = "GROUP"
+}
+
+export enum EffortLevel {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH"
+}
+
+export enum AuthorityCategory {
   GOVERNMENT = "GOVERNMENT",
   NGO = "NGO",
-  OTHERS = "OTHERS",
+  COMMUNITY = "COMMUNITY",
+  OTHER = "OTHER"
 }
+
+export enum AuthorityRole {
+  CLEANUP = "CLEANUP",
+  WASTE_MANAGEMENT = "WASTE_MANAGEMENT"
+}
+
 export type ContactStatus = "PENDING" | "CONTACTED" | "RESPONDED" | "NO_RESPONSE";
-export type BeautifyType = "TREE_PLANTING" | "WALL_PAINTING" | "SIGNAGE" | "CLEANUP" | "OTHER";
+
+export enum EnhancementType {
+  TREE_PLANTING = "TREE_PLANTING",
+  MURAL_PAINTING = "MURAL_PAINTING",
+  SIGNAGE_INSTALLATION = "SIGNAGE_INSTALLATION",
+  CLEANUP_ACTIVITY = "CLEANUP_ACTIVITY",
+  OTHER = "OTHER"
+}
+
 export type MonitoringStatus = "ACTIVE" | "COMPLETED" | "ESCALATED";
-export type DiscussionPhase = "REPORT_VOTING" | "DRIVE_VOTING";
+
+export type DiscussionPhase = "REPORT_VOTING" | "DRIVE_VOTING" | "GENERAL";
 
 // ----------------- Models -----------------
 
@@ -42,11 +72,11 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
 
-  reportVotes?: ReportVote[];
-  driveVotes?: DriveVote[];
+  votes?: Vote[];
   discussions?: Discussion[];
   volunteer?: Volunteer | null;
   reports?: Report[];
+  submittedAuthorities?: Authority[];
 }
 
 export interface Volunteer {
@@ -57,6 +87,9 @@ export interface Volunteer {
   tasks?: Task[];
   joinedAt: Date;
   reportAuthorities?: ReportAuthority[];
+  driveVolunteers?: DriveVolunteer[];
+  preferences?: VolunteerPreference | null;
+  monitorings?: Monitoring[];
 }
 
 export interface Report {
@@ -65,7 +98,8 @@ export interface Report {
   reporter: User;
   title: string;
   description: string;
-  imageUrl?: string | null;     // ImageKit URL
+  imageUrl?: string | null;
+  media?: string[];
   status: ReportStatus;
 
   latitude?: number | null;
@@ -73,8 +107,7 @@ export interface Report {
   city?: string | null;
   region?: string | null;
   country?: string | null;
-
-  pinCode?: string | null; 
+  pinCode?: string | null;
 
   createdAt: Date;
   updatedAt: Date;
@@ -82,19 +115,12 @@ export interface Report {
   tasks?: Task[];
   reportAuthorities?: ReportAuthority[];
   drives?: DriveReport[];
-  votes?: ReportVote[];
+  unifiedVotes?: Vote[];
   monitorings?: Monitoring[];
-  media?: string[];
-
-}
-
-export interface ReportVote {
-  id: string;
-  userId: string;
-  user: User;
-  reportId: string;
-  report: Report;
-  createdAt: Date;
+  discussions?: Discussion[];
+  votingOpenAt?: Date | null;
+  votingCloseAt?: Date | null;
+  finalVoteCount?: number | null;
 }
 
 export interface Drive {
@@ -113,10 +139,12 @@ export interface Drive {
   finalVoteCount?: number | null;
 
   reports?: DriveReport[];
-  votes?: DriveVote[];
+  unifiedVotes?: Vote[];
   tasks?: Task[];
-  beautify?: Beautification[];
+  enhancements?: Enhancement[];
   monitorings?: Monitoring[];
+  driveVolunteers?: DriveVolunteer[];
+  discussions?: Discussion[];
 }
 
 export interface DriveReport {
@@ -127,38 +155,39 @@ export interface DriveReport {
   report: Report;
 }
 
-export interface DriveVote {
+export interface DriveVolunteer {
   id: string;
-  userId: string;
-  user: User;
   driveId: string;
   drive: Drive;
-  createdAt: Date;
+  volunteerId: string;
+  volunteer: Volunteer;
+  joinedAt: Date;
 }
 
 export interface Task {
   id: string;
   title: string;
-  description?: string | null;
-  reportId: string;
-  report: Report;
+  description: string;
+  reportId?: string | null;
+  report?: Report | null;
   driveId?: string | null;
   drive?: Drive | null;
   volunteerId?: string | null;
   volunteer?: Volunteer | null;
-  comfort: SocializingLevel;
+  engagement: EngagementLevel;
   timeSlot?: Date | null;
   status: TaskStatus;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Beautification {
+export interface Enhancement {
   id: string;
   driveId: string;
   drive: Drive;
-  type: BeautifyType;
+  type: EnhancementType;
   description?: string | null;
+  referenceUrls?: string[];
   createdAt: Date;
 }
 
@@ -168,6 +197,8 @@ export interface Monitoring {
   drive?: Drive | null;
   reportId?: string | null;
   report?: Report | null;
+  volunteerId?: string | null;
+  volunteer?: Volunteer | null;
   status: MonitoringStatus;
   checkDate: Date;
   notes?: string | null;
@@ -177,7 +208,8 @@ export interface Monitoring {
 export interface Authority {
   id: string;
   name: string;
-  type: AuthorityType;
+  category: AuthorityCategory;
+  role: AuthorityRole;
   city: string;
   region?: string | null;
   email?: string | null;
@@ -186,6 +218,7 @@ export interface Authority {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  submittedBy?: User | null;
   reportAuthorities?: ReportAuthority[];
 }
 
@@ -209,5 +242,35 @@ export interface Discussion {
   user: User;
   phase: DiscussionPhase;
   content: string;
+  reportId?: string | null;
+  report?: Report | null;
+  driveId?: string | null;
+  drive?: Drive | null;
   createdAt: Date;
+}
+
+export interface VolunteerPreference {
+  id: string;
+  volunteerId: string;
+  volunteer: Volunteer;
+  engagement: EngagementLevel;
+  availability?: string | null;
+  skills?: string[];
+  effortLevel: EffortLevel;
+  updatedAt: Date;
+}
+
+export interface Vote {
+  id: string;
+  userId: string;
+  user: User;
+  reportId?: string | null;
+  report?: Report | null;
+  driveId?: string | null;
+  drive?: Drive | null;
+  createdAt: Date;
+}
+
+export interface ReportWithVotes extends Report {
+  votes: Vote[];
 }

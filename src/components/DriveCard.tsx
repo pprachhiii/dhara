@@ -32,7 +32,7 @@ export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
   const volunteerCount = uniqueVolunteers.size;
 
   // tasks progress
-  const completedTasks = (drive.tasks ?? []).filter((t) => t.status === "DONE").length;
+  const completedTasks = (drive.tasks ?? []).filter((t) => t.status === "COMPLETED").length;
   const totalTasks = (drive.tasks ?? []).length;
 
   return (
@@ -82,12 +82,12 @@ export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
               <div key={task.id} className="flex items-center space-x-2 text-xs">
                 <div
                   className={`w-2 h-2 rounded-full ${
-                    task.status === "DONE" ? "bg-success" : "bg-muted-foreground"
+                    task.status === "COMPLETED" ? "bg-success" : "bg-muted-foreground"
                   }`}
                 />
                 <span
                   className={
-                    task.status === "DONE"
+                    task.status === "COMPLETED"
                       ? "line-through text-muted-foreground"
                       : ""
                   }
@@ -95,7 +95,7 @@ export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
                   {task.report?.title ?? "Untitled Task"}
                 </span>
                 <Badge variant="outline" className="text-xs">
-                  {task.comfort}
+                  {task.engagement}
                 </Badge>
               </div>
             ))}
@@ -133,7 +133,7 @@ export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
 
           {/* Status-based buttons */}
           {drive.status === "PLANNED" && (
-            <Link href="/votes/drives">
+            <Link href="/drives/votes">
               <Button
                 size="sm"
                 className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"

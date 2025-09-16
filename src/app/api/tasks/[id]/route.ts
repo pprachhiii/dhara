@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Context } from "@/lib/context";
-import { TaskStatus, SocializingLevel } from "@prisma/client";
+import { TaskStatus, EngagementLevel } from "@prisma/client";
 import { requireAuth } from "@/lib/serverAuth";
 
 // GET /api/tasks/:id (public for now)
-export async function GET(request: NextRequest, context: Context) {
+export async function GET(_request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, context: Context) {
       where: { id },
       data: {
         volunteerId: data.volunteerId ?? undefined,
-        comfort: data.comfort ? (data.comfort as SocializingLevel) : undefined,
+        engagement: data.engagement ? (data.engagement as EngagementLevel) : undefined,
         timeSlot: data.timeSlot ? new Date(data.timeSlot) : undefined,
         status: data.status ? (data.status as TaskStatus) : undefined,
       },

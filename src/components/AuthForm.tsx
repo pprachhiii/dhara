@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react"; // Add lucide-react for icons
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -28,6 +29,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // <-- New state
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -36,7 +38,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
-        credentials: "include", 
+        credentials: "include",
       });
 
       let result: AuthResponse = {};
@@ -53,10 +55,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       if (mode === "register") {
         toast.success("Account created! You are now logged in.");
-        router.push("/"); 
+        router.push("/");
       } else {
         toast.success("Login successful!");
-        router.push("/"); 
+        router.push("/");
       }
     } catch (err) {
       console.error(err);
@@ -68,88 +70,94 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <form
-    onSubmit={handleSubmit(onSubmit)}
-    className="space-y-6 bg-white p-8 rounded-2xl shadow-lg max-w-md w-full mx-auto -mt-8 min-h-[28rem] flex flex-col justify-center"
-  >
-    <h1 className="text-3xl font-bold mb-6 text-center">
-      {mode === "login" ? "Login to DHARA" : "Register"}
-    </h1>
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 bg-white p-8 rounded-2xl shadow-lg max-w-md w-full mx-auto -mt-8 min-h-[28rem] flex flex-col justify-center"
+    >
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        {mode === "login" ? "Login to DHARA" : "Register"}
+      </h1>
 
-    {mode === "register" && (
+      {mode === "register" && (
+        <div className="space-y-1">
+          <Input
+            type="text"
+            placeholder="Full Name"
+            {...register("name")}
+            disabled={loading}
+            className="p-3 text-lg"
+          />
+        </div>
+      )}
+
       <div className="space-y-1">
         <Input
-          type="text"
-          placeholder="Full Name"
-          {...register("name")}
+          type="email"
+          placeholder="Email"
+          {...register("email", { required: "Email is required" })}
           disabled={loading}
           className="p-3 text-lg"
         />
+        {errors.email && (
+          <p className="text-red-500 text-sm">{errors.email.message}</p>
+        )}
       </div>
-    )}
 
-    <div className="space-y-1">
-      <Input
-        type="email"
-        placeholder="Email"
-        {...register("email", { required: "Email is required" })}
+      <div className="space-y-1 relative">
+        <Input
+          type={showPassword ? "text" : "password"} // <-- toggle password type
+          placeholder="Password"
+          {...register("password", { required: "Password is required" })}
+          disabled={loading}
+          className="p-3 text-lg pr-10" // padding-right for icon
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+        {errors.password && (
+          <p className="text-red-500 text-sm">{errors.password.message}</p>
+        )}
+
+        {mode === "login" && (
+          <p className="text-right mt-1">
+            <Link
+              href="/password/forget-password"
+              className="text-blue-600 hover:underline text-sm"
+            >
+              Forgot Password?
+            </Link>
+          </p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
         disabled={loading}
-        className="p-3 text-lg"
-      />
-      {errors.email && (
-        <p className="text-red-500 text-sm">{errors.email.message}</p>
-      )}
-    </div>
+        className="w-full py-3 text-lg rounded-xl"
+      >
+        {loading ? "Please wait..." : mode === "login" ? "Login" : "Register"}
+      </Button>
 
-    <div className="space-y-1">
-      <Input
-        type="password"
-        placeholder="Password"
-        {...register("password", { required: "Password is required" })}
-        disabled={loading}
-        className="p-3 text-lg"
-      />
-      {errors.password && (
-        <p className="text-red-500 text-sm">{errors.password.message}</p>
-      )}
-
-      {mode === "login" && (
-        <p className="text-right mt-1">
-          <Link
-            href="/password/forget-password"
-            className="text-blue-600 hover:underline text-sm"
-          >
-            Forgot Password?
-          </Link>
-        </p>
-      )}
-    </div>
-
-    <Button
-      type="submit"
-      disabled={loading}
-      className="w-full py-3 text-lg rounded-xl"
-    >
-      {loading ? "Please wait..." : mode === "login" ? "Login" : "Register"}
-    </Button>
-
-    <p className="text-center mt-4 text-gray-600">
-      {mode === "login" ? (
-        <>
-          Don&#39;t have an account?{" "}
-          <Link href="/auth/register" className="text-blue-600 hover:underline">
-            Register
-          </Link>
-        </>
-      ) : (
-        <>
-          Already have an account?{" "}
-          <Link href="/auth/login" className="text-blue-600 hover:underline">
-            Login
-          </Link>
-        </>
-      )}
-    </p>
-  </form>
-
+      <p className="text-center mt-4 text-gray-600">
+        {mode === "login" ? (
+          <>
+            Don&apos;t have an account?{" "}
+            <Link href="/auth/register" className="text-blue-600 hover:underline">
+              Register
+            </Link>
+          </>
+        ) : (
+          <>
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-blue-600 hover:underline">
+              Login
+            </Link>
+          </>
+        )}
+      </p>
+    </form>
   );
 }

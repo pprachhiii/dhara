@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { AuthorityType } from "@prisma/client";
+import { AuthorityCategory, AuthorityRole } from "@prisma/client";
 import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/authority → list all authorities (optional: can be public)
+// GET /api/authority → list all authorities (optional: public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const city = url.searchParams.get("city");
   const region = url.searchParams.get("region");
-  const typeParam = url.searchParams.get("type");
+  const categoryParam = url.searchParams.get("category");
+  const roleParam = url.searchParams.get("role");
   const search = url.searchParams.get("search");
 
-  const type =
-    typeParam && Object.values(AuthorityType).includes(typeParam as AuthorityType)
-      ? (typeParam as AuthorityType)
+  const category =
+    categoryParam && Object.values(AuthorityCategory).includes(categoryParam as AuthorityCategory)
+      ? (categoryParam as AuthorityCategory)
+      : undefined;
+
+  const role =
+    roleParam && Object.values(AuthorityRole).includes(roleParam as AuthorityRole)
+      ? (roleParam as AuthorityRole)
       : undefined;
 
   try {
@@ -21,13 +27,12 @@ export async function GET(request: NextRequest) {
       where: {
         ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
         ...(region ? { region: { equals: region, mode: "insensitive" } } : {}),
-        ...(type ? { type } : {}),
+        ...(category ? { category } : {}),
+        ...(role ? { role } : {}),
         ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
       },
       orderBy: [{ city: "asc" }, { name: "asc" }],
-      include: {
-        reportAuthorities: true,
-      },
+      include: { reportAuthorities: true },
     });
 
     return NextResponse.json(authorities);
@@ -45,19 +50,29 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
 
-    if (!data.name || !data.type || !data.city) {
-      return NextResponse.json({ error: "Missing required fields: name, type, city" }, { status: 400 });
+    if (!data.name || !data.category || !data.role || !data.city) {
+      return NextResponse.json(
+        { error: "Missing required fields: name, category, role, city" },
+        { status: 400 }
+      );
     }
 
-    const type = data.type as AuthorityType;
-    if (!Object.values(AuthorityType).includes(type)) {
-      return NextResponse.json({ error: "Invalid authority type" }, { status: 400 });
+    const category = data.category as AuthorityCategory;
+    const role = data.role as AuthorityRole;
+
+    if (!Object.values(AuthorityCategory).includes(category)) {
+      return NextResponse.json({ error: "Invalid authority category" }, { status: 400 });
+    }
+
+    if (!Object.values(AuthorityRole).includes(role)) {
+      return NextResponse.json({ error: "Invalid authority role" }, { status: 400 });
     }
 
     const newAuthority = await prisma.authority.create({
       data: {
         name: data.name,
-        type,
+        category,
+        role,
         city: data.city,
         region: data.region || null,
         email: data.email || null,
@@ -67,7 +82,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: "Authority created successfully", authority: newAuthority }, { status: 201 });
+    return NextResponse.json(
+      { message: "Authority created successfully", authority: newAuthority },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("Error in POST /api/authority:", err);
     return NextResponse.json({ error: "Failed to create authority" }, { status: 500 });

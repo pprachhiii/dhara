@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await prisma.reportVote.findFirst({
+    // Check if user already voted on this report
+    const existing = await prisma.vote.findFirst({
       where: { userId: auth.user.id, reportId },
     });
 
@@ -28,21 +29,28 @@ export async function POST(req: NextRequest) {
     }
 
     const report = await prisma.report.findUnique({ where: { id: reportId } });
-    if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!report) {
+      return NextResponse.json(
+        { error: "Report not found" },
+        { status: 404 }
+      );
+    }
 
     const now = new Date();
 
+    // If voting hasn't opened, open it now
     if (!report.votingOpenAt) {
       await prisma.report.update({
         where: { id: reportId },
         data: {
           votingOpenAt: now,
           votingCloseAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // +7 days
-          status: "ELIGIBLE_DRIVE",
+          status: "ELIGIBLE_FOR_VOTE",
         },
       });
     }
 
+    // Prevent votes after closing
     if (report.votingCloseAt && now > report.votingCloseAt) {
       return NextResponse.json(
         { error: "Voting for this report has ended" },
@@ -50,13 +58,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const vote = await prisma.reportVote.create({
+    // Create vote
+    const vote = await prisma.vote.create({
       data: { userId: auth.user.id, reportId },
     });
 
-    const voteCount = await prisma.reportVote.count({ where: { reportId } });
+    // Count total votes for this report
+    const voteCount = await prisma.vote.count({ where: { reportId } });
     const VOTE_THRESHOLD = 3;
 
+    // If threshold is met, update report status
     if (voteCount >= VOTE_THRESHOLD && report.status !== "IN_PROGRESS") {
       await prisma.report.update({
         where: { id: reportId },

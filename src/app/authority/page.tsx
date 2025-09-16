@@ -18,7 +18,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Authority, AuthorityType, ReportAuthority, Report } from "@/lib/types";
+import {
+  Authority,
+  ReportAuthority,
+  Report,
+  AuthorityCategory,
+} from "@prisma/client";
 import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
@@ -35,7 +40,7 @@ export default function AuthoritiesPage() {
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
-  const [type, setType] = useState("");
+  const [category, setCategory] = useState("");
 
   const fetchAuthorities = useCallback(async () => {
     setLoading(true);
@@ -43,7 +48,7 @@ export default function AuthoritiesPage() {
     if (search) params.append("search", search);
     if (city) params.append("city", city);
     if (region) params.append("region", region);
-    if (type) params.append("type", type);
+    if (category) params.append("category", category);
 
     try {
       const res = await fetch(`/api/authority?${params.toString()}`, { cache: "no-store" });
@@ -55,7 +60,7 @@ export default function AuthoritiesPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, city, region, type]);
+  }, [search, city, region, category]);
 
   useEffect(() => {
     fetchAuthorities();
@@ -108,14 +113,15 @@ export default function AuthoritiesPage() {
           onChange={(e) => setRegion(e.target.value)}
           className="w-40"
         />
-        <Select value={type} onValueChange={(val) => setType(val)}>
+        <Select value={category} onValueChange={(val) => setCategory(val)}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder="Filter by category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={AuthorityType.GOVERNMENT}>Government</SelectItem>
-            <SelectItem value={AuthorityType.NGO}>NGO</SelectItem>
-            <SelectItem value={AuthorityType.OTHERS}>Others</SelectItem>
+            <SelectItem value={AuthorityCategory.GOVERNMENT}>Government</SelectItem>
+            <SelectItem value={AuthorityCategory.NGO}>NGO</SelectItem>
+            <SelectItem value={AuthorityCategory.COMMUNITY}>Community</SelectItem>
+            <SelectItem value={AuthorityCategory.OTHER}>Other</SelectItem>
           </SelectContent>
         </Select>
         <Button
@@ -124,7 +130,7 @@ export default function AuthoritiesPage() {
             setSearch("");
             setCity("");
             setRegion("");
-            setType("");
+            setCategory("");
           }}
         >
           Reset
@@ -138,7 +144,8 @@ export default function AuthoritiesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>City</TableHead>
                 <TableHead>Region</TableHead>
                 <TableHead>Email</TableHead>
@@ -154,7 +161,8 @@ export default function AuthoritiesPage() {
                   onClick={() => openAuthority(auth.id)}
                 >
                   <TableCell className="font-medium">{auth.name}</TableCell>
-                  <TableCell>{auth.type}</TableCell>
+                  <TableCell>{auth.category}</TableCell>
+                  <TableCell>{auth.role}</TableCell>
                   <TableCell>{auth.city}</TableCell>
                   <TableCell>{auth.region ?? "-"}</TableCell>
                   <TableCell>{auth.email ?? "-"}</TableCell>
@@ -192,7 +200,9 @@ export default function AuthoritiesPage() {
               ✕
             </button>
             <h2 className="text-2xl font-bold mb-2">{selectedAuthority.name}</h2>
-            <p className="text-sm text-gray-500 mb-4">{selectedAuthority.type}</p>
+            <p className="text-sm text-gray-500 mb-4">
+              {selectedAuthority.category} - {selectedAuthority.role}
+            </p>
             <p className="mb-1"><strong>City:</strong> {selectedAuthority.city}</p>
             <p className="mb-1"><strong>Region:</strong> {selectedAuthority.region ?? "-"}</p>
             <p className="mb-1"><strong>Email:</strong> {selectedAuthority.email ?? "-"}</p>
