@@ -148,10 +148,11 @@ export function ReportCard({
                   <div className="flex gap-2">
                     <Button
                       className="bg-teal-500 hover:bg-teal-600 text-white shadow-md transition"
-                      onClick={() => (window.location.href = "/tasks")}
+                      onClick={() => (window.location.href = `/tasks?reportId=${report.id}`)}
                     >
                       Task
                     </Button>
+
                     <Button
                       className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
                       onClick={async () => {
