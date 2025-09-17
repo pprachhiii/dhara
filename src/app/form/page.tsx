@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
-type ModelType = "Task" | "Authority" | "Volunteer";
+type ModelType = "Task" | "Authority" ;
 
 function FormContent() {
   const searchParams = useSearchParams();

@@ -116,13 +116,15 @@ export default function Reports() {
     const visibleReports = isExpanded ? reportsArray : reportsArray.slice(0, 3);
 
     return (
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">{title} ({reportsArray.length})</h2>
+      <div className="space-y-4" key={sectionKey}>
+        <h2 className="text-2xl font-bold">
+          {title} ({reportsArray.length})
+        </h2>
         <p className="text-sm text-muted-foreground">{description}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleReports.map((report) => (
+          {visibleReports.map((report, index) => (
             <ReportCard
-              key={report.id}
+              key={`${sectionKey}-${report.id}-${index}`} // unique key
               report={mapReportForCard(report)}
               onViewDetails={() => setSelectedReport(report)}
             />

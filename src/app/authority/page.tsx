@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,20 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Authority,
-  ReportAuthority,
-  Report,
-  AuthorityCategory,
-} from "@prisma/client";
+import { Plus, Search, Filter } from "lucide-react";
+import { Authority, ReportAuthority, Report, AuthorityCategory, AuthorityRole } from "@prisma/client";
 import toast from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
@@ -38,21 +26,19 @@ export default function AuthoritiesPage() {
   const [creatingAuthority, setCreatingAuthority] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [city, setCity] = useState("");
-  const [region, setRegion] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<AuthorityCategory | "ALL">("ALL");
+  const [role, setRole] = useState<AuthorityRole | "ALL">("ALL");
 
   const fetchAuthorities = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.append("search", search);
-    if (city) params.append("city", city);
-    if (region) params.append("region", region);
-    if (category) params.append("category", category);
+    if (category !== "ALL") params.append("category", category);
+    if (role !== "ALL") params.append("role", role);
 
     try {
       const res = await fetch(`/api/authority?${params.toString()}`, { cache: "no-store" });
-      const data = await res.json();
+      const data: Authority[] = await res.json();
       setAuthorities(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -60,7 +46,7 @@ export default function AuthoritiesPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, city, region, category]);
+  }, [search, category, role]);
 
   useEffect(() => {
     fetchAuthorities();
@@ -79,95 +65,105 @@ export default function AuthoritiesPage() {
   };
 
   return (
-    <div className="h-screen overflow-y-auto p-6 relative">
-      {/* Loading State */}
-      {loading ? (
-        <p>Loading authorities...</p>
-      ) : authorities.length === 0 ? (
-        <p>No authorities found.</p>
-      ) : null}
-
+    <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Authorities</h1>
-        <Button onClick={() => setCreatingAuthority(true)}>Create Authority</Button>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Authorities</h1>
+          <p className="text-muted-foreground">
+            Manage and track authorities with clear categories and roles.
+          </p>
+        </div>
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md"
+          asChild
+        >
+          <button onClick={() => setCreatingAuthority(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Create Authority
+          </button>
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <Input
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
-        <Input
-          placeholder="Filter by city"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          className="w-40"
-        />
-        <Input
-          placeholder="Filter by region"
-          value={region}
-          onChange={(e) => setRegion(e.target.value)}
-          className="w-40"
-        />
-        <Select value={category} onValueChange={(val) => setCategory(val)}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Filter by category" />
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, city, or region..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <Select value={category} onValueChange={(val) => setCategory(val as AuthorityCategory | "ALL")}>
+          <SelectTrigger className="w-full md:w-48">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="ALL">All Categories</SelectItem>
             <SelectItem value={AuthorityCategory.GOVERNMENT}>Government</SelectItem>
             <SelectItem value={AuthorityCategory.NGO}>NGO</SelectItem>
             <SelectItem value={AuthorityCategory.COMMUNITY}>Community</SelectItem>
             <SelectItem value={AuthorityCategory.OTHER}>Other</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={role} onValueChange={(val) => setRole(val as AuthorityRole | "ALL")}>
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="Role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Roles</SelectItem>
+            <SelectItem value={AuthorityRole.CLEANUP}>Cleanup</SelectItem>
+            <SelectItem value={AuthorityRole.WASTE_MANAGEMENT}>Waste Management</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           variant="outline"
           onClick={() => {
             setSearch("");
-            setCity("");
-            setRegion("");
-            setCategory("");
+            setCategory("ALL");
+            setRole("ALL");
           }}
         >
           Reset
         </Button>
       </div>
 
-      {/* Authorities Table */}
-      {authorities.length > 0 && (
+      {/* Authority Table */}
+      {authorities.length > 0 ? (
         <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>City</TableHead>
-                <TableHead>Region</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Website</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="min-w-full">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="text-left px-4 py-2">Name</th>
+                <th className="text-left px-4 py-2">Category</th>
+                <th className="text-left px-4 py-2">Role</th>
+                <th className="text-left px-4 py-2">City</th>
+                <th className="text-left px-4 py-2">Region</th>
+                <th className="text-left px-4 py-2">Email</th>
+                <th className="text-left px-4 py-2">Phone</th>
+                <th className="text-left px-4 py-2">Website</th>
+              </tr>
+            </thead>
+            <tbody>
               {authorities.map((auth) => (
-                <TableRow
+                <tr
                   key={auth.id}
-                  className="cursor-pointer hover:bg-gray-100"
+                  className="cursor-pointer hover:bg-gray-50"
                   onClick={() => openAuthority(auth.id)}
                 >
-                  <TableCell className="font-medium">{auth.name}</TableCell>
-                  <TableCell>{auth.category}</TableCell>
-                  <TableCell>{auth.role}</TableCell>
-                  <TableCell>{auth.city}</TableCell>
-                  <TableCell>{auth.region ?? "-"}</TableCell>
-                  <TableCell>{auth.email ?? "-"}</TableCell>
-                  <TableCell>{auth.phone ?? "-"}</TableCell>
-                  <TableCell>
+                  <td className="px-4 py-2 font-medium">{auth.name}</td>
+                  <td className="px-4 py-2">{auth.category}</td>
+                  <td className="px-4 py-2">{auth.role}</td>
+                  <td className="px-4 py-2">{auth.city}</td>
+                  <td className="px-4 py-2">{auth.region ?? "-"}</td>
+                  <td className="px-4 py-2">{auth.email ?? "-"}</td>
+                  <td className="px-4 py-2">{auth.phone ?? "-"}</td>
+                  <td className="px-4 py-2">
                     {auth.website ? (
                       <a
                         href={auth.website}
@@ -181,15 +177,37 @@ export default function AuthoritiesPage() {
                     ) : (
                       "-"
                     )}
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
+      ) : !loading ? (
+        <div className="text-center py-12">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 mx-auto mb-4 bg-green-600 rounded-full flex items-center justify-center">
+              <Search className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No authorities found</h3>
+            <p className="text-muted-foreground mb-6">
+              {search || category !== "ALL" || role !== "ALL"
+                ? "Try adjusting your filters."
+                : "Be the first to create an authority!"}
+            </p>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl"
+              onClick={() => setCreatingAuthority(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Create First Authority
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p>Loading authorities...</p>
       )}
 
-      {/* Authority Details Modal */}
+      {/* Authority Detail Modal */}
       {selectedAuthority && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
@@ -251,7 +269,6 @@ export default function AuthoritiesPage() {
             >
               ✕
             </button>
-
             <CreateForm
               model="Authority"
               onClose={() => setCreatingAuthority(false)}

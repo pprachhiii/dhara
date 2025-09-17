@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { AuthorityCategory, AuthorityRole } from "@prisma/client";
 import { requireAuth } from "@/lib/serverAuth";
 
-// GET /api/authority → list all authorities (optional: public)
+// GET /api/authority → list all authorities with optional filters
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const city = url.searchParams.get("city");
@@ -12,11 +12,13 @@ export async function GET(request: NextRequest) {
   const roleParam = url.searchParams.get("role");
   const search = url.searchParams.get("search");
 
+  // Validate category param
   const category =
     categoryParam && Object.values(AuthorityCategory).includes(categoryParam as AuthorityCategory)
       ? (categoryParam as AuthorityCategory)
       : undefined;
 
+  // Validate role param
   const role =
     roleParam && Object.values(AuthorityRole).includes(roleParam as AuthorityRole)
       ? (roleParam as AuthorityRole)
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
 
+    // Required fields validation
     if (!data.name || !data.category || !data.role || !data.city) {
       return NextResponse.json(
         { error: "Missing required fields: name, category, role, city" },
@@ -60,10 +63,10 @@ export async function POST(request: NextRequest) {
     const category = data.category as AuthorityCategory;
     const role = data.role as AuthorityRole;
 
+    // Validate enums
     if (!Object.values(AuthorityCategory).includes(category)) {
       return NextResponse.json({ error: "Invalid authority category" }, { status: 400 });
     }
-
     if (!Object.values(AuthorityRole).includes(role)) {
       return NextResponse.json({ error: "Invalid authority role" }, { status: 400 });
     }
