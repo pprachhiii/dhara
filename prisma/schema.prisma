@@ -54,7 +54,7 @@ model Report {
   region      String?
   country     String?
 
-  pinCode     String? @unique
+  pinCode     String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
