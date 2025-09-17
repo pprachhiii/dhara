@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
     const { driveId, reportId }: { driveId?: string; reportId?: string } = await req.json();
     const userId = auth.user.id;
 
-    // 1️⃣ Ensure volunteer profile + role switch
     let volunteer = await prisma.volunteer.findUnique({ where: { userId } });
     if (!volunteer) {
       volunteer = await prisma.volunteer.create({ data: { userId } });
@@ -20,7 +19,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2️⃣ Link to drive if provided
     if (driveId) {
       const exists = await prisma.driveVolunteer.findUnique({
         where: { driveId_volunteerId: { driveId, volunteerId: volunteer.id } },
@@ -30,7 +28,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3️⃣ Link to report if provided
     if (reportId) {
       const ra = await prisma.reportAuthority.findFirst({ where: { reportId } });
       if (ra && !ra.volunteerId) {

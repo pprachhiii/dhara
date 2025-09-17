@@ -100,7 +100,7 @@ export function ReportCard({
                 return (
                   <Button
                     className="bg-red-500 hover:bg-red-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/authorities")}
+                    onClick={() => (window.location.href = "/authority")}
                   >
                     Contact Authority
                   </Button>
@@ -169,7 +169,8 @@ export function ReportCard({
                             return;
                           }
 
-                          window.location.href = "/tasks";
+                          const data = await res.json();
+                          window.location.href = `/tasks?reportId=${data.reportId}`;
                         } catch (e) {
                           console.error(e);
                           alert("Something went wrong");
@@ -178,6 +179,7 @@ export function ReportCard({
                     >
                       Volunteer
                     </Button>
+
 
                   </div>
                 );

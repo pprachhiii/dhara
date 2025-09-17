@@ -168,9 +168,13 @@ export function ReportDetailPage({ report, onClose }: ReportDetailPageProps) {
               >
                 <option value="PENDING">PENDING</option>
                 <option value="AUTHORITY_CONTACTED">AUTHORITY_CONTACTED</option>
-                <option value="ELIGIBLE_DRIVE">ELIGIBLE_DRIVE</option>
+                <option value="RESOLVED_BY_AUTHORITY">RESOLVED_BY_AUTHORITY</option>
+                <option value="ELIGIBLE_FOR_VOTE">ELIGIBLE_FOR_VOTE</option>
                 <option value="VOTING_FINALIZED">VOTING_FINALIZED</option>
+                <option value="ELIGIBLE_FOR_DRIVE">ELIGIBLE_FOR_DRIVE</option>
+                <option value="DRIVE_FINALIZED">DRIVE_FINALIZED</option>
                 <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="UNDER_MONITORING">UNDER_MONITORING</option>
                 <option value="RESOLVED">RESOLVED</option>
               </select>
             </div>

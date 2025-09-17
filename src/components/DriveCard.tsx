@@ -4,7 +4,15 @@ import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, CheckCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Calendar, Users, CheckCircle, X } from "lucide-react";
 import { Drive, Task } from "@/lib/types";
 
 interface DriveCardProps {
@@ -36,142 +44,185 @@ export function DriveCard({ drive, onViewDetails }: DriveCardProps) {
   const totalTasks = (drive.tasks ?? []).length;
 
   return (
-    <Card className="overflow-hidden transition hover:shadow-lg rounded-2xl">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-card-foreground mb-2 line-clamp-2">
-              {drive.title}
-            </h3>
-            {getStatusBadge(drive.status)}
-          </div>
-        </div>
-      </CardHeader>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="overflow-hidden transition hover:shadow-lg rounded-2xl cursor-pointer">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="font-semibold text-card-foreground mb-2 line-clamp-2">
+                  {drive.title}
+                </h3>
+                {getStatusBadge(drive.status)}
+              </div>
+            </div>
+          </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Description */}
-        <p className="text-sm text-muted-foreground line-clamp-3">{drive.description}</p>
-
-        {/* Meta information */}
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>{new Date(drive.startDate).toLocaleDateString()}</span>
-          </div>
-
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>{volunteerCount} volunteers signed up</span>
-          </div>
-
-          {(drive.status === "ONGOING" || drive.status === "COMPLETED") && (
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground line-clamp-3">{drive.description}</p>
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <CheckCircle className="h-4 w-4" />
-              <span>
-                {completedTasks}/{totalTasks} tasks completed
-              </span>
+              <Calendar className="h-4 w-4" />
+              <span>{new Date(drive.startDate).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>{volunteerCount} volunteers signed up</span>
+            </div>
+            {(drive.status === "ONGOING" || drive.status === "COMPLETED") && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <CheckCircle className="h-4 w-4" />
+                <span>
+                  {completedTasks}/{totalTasks} tasks completed
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
+        <DialogHeader className="flex justify-between items-center">
+          <DialogTitle>{drive.title}</DialogTitle>
+          <DialogClose asChild>
+            <Button variant="ghost" size="icon">
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogClose>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Description */}
+          <p className="text-sm text-muted-foreground">{drive.description}</p>
+
+          {/* Meta */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>{new Date(drive.startDate).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>{volunteerCount} volunteers signed up</span>
+            </div>
+            {(drive.status === "ONGOING" || drive.status === "COMPLETED") && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <CheckCircle className="h-4 w-4" />
+                <span>
+                  {completedTasks}/{totalTasks} tasks completed
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Task preview */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-card-foreground">Tasks:</h4>
+            <div className="space-y-1">
+              {(drive.tasks ?? []).map((task) => (
+                <div key={task.id} className="flex items-center space-x-2 text-xs">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      task.status === "COMPLETED" ? "bg-success" : "bg-muted-foreground"
+                    }`}
+                  />
+                  <span
+                    className={
+                      task.status === "COMPLETED" ? "line-through text-muted-foreground" : ""
+                    }
+                  >
+                    {task.report?.title ?? "Untitled Task"}
+                  </span>
+                  <Badge variant="outline" className="text-xs">
+                    {task.engagement}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Linked reports */}
+          {(drive.reports?.length ?? 0) > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Addresses {drive.reports!.length} community report
+              {drive.reports!.length > 1 ? "s" : ""}
             </div>
           )}
         </div>
 
-        {/* Task preview */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-card-foreground">Tasks:</h4>
-          <div className="space-y-1">
-            {(drive.tasks ?? []).slice(0, 3).map((task) => (
-              <div key={task.id} className="flex items-center space-x-2 text-xs">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    task.status === "COMPLETED" ? "bg-success" : "bg-muted-foreground"
-                  }`}
-                />
-                <span
-                  className={
-                    task.status === "COMPLETED"
-                      ? "line-through text-muted-foreground"
-                      : ""
-                  }
-                >
-                  {task.report?.title ?? "Untitled Task"}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  {task.engagement}
-                </Badge>
-              </div>
-            ))}
-            {(drive.tasks?.length ?? 0) > 3 && (
-              <div className="text-xs text-muted-foreground">
-                +{drive.tasks!.length - 3} more tasks
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Linked reports */}
-        {(drive.reports?.length ?? 0) > 0 && (
-          <div className="text-xs text-muted-foreground">
-            Addresses {drive.reports!.length} community report
-            {drive.reports!.length > 1 ? "s" : ""}
-          </div>
-        )}
-      </CardContent>
-
-      <CardFooter className="pt-4 border-t bg-muted/20">
-        <div className="flex items-center justify-between w-full">
-          {/* Always show View Details */}
-          {onViewDetails ? (
-            <Button variant="outline" size="sm" onClick={onViewDetails}>
-              View Details
-            </Button>
-          ) : (
-            <Link href={`/drives/${drive.id}`}>
-              <Button variant="outline" size="sm">
+        <CardFooter className="pt-4 border-t bg-muted/20 mt-4">
+          <div className="flex items-center justify-between w-full">
+            {onViewDetails ? (
+              <Button variant="outline" size="sm" onClick={onViewDetails}>
                 View Details
               </Button>
-            </Link>
-          )}
-
-          {/* Status-based buttons */}
-          {drive.status === "PLANNED" && (
-            <Link href="/drives/votes">
-              <Button
-                size="sm"
-                className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
-              >
-                Vote
-              </Button>
-            </Link>
-          )}
-
-          {drive.status === "ONGOING" && (
-            <div className="flex gap-2">
-              <Link href="/tasks">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shadow-gentle hover:shadow-accent transition-smooth"
-                >
-                  Tasks
+            ) : (
+              <Link href={`/drives/${drive.id}`}>
+                <Button variant="outline" size="sm">
+                  View Details
                 </Button>
               </Link>
-              <Link href="/form?model=Volunteer">
+            )}
+
+            {drive.status === "PLANNED" && (
+              <Link href="/drives/votes">
                 <Button
                   size="sm"
                   className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
                 >
-                  Volunteer
+                  Vote
                 </Button>
               </Link>
-            </div>
-          )}
+            )}
 
-          {drive.status === "COMPLETED" && (
-            <Button size="sm" disabled variant="secondary">
-              Completed
-            </Button>
-          )}
-        </div>
-      </CardFooter>
-    </Card>
+            {drive.status === "ONGOING" && (
+              <div className="flex gap-2">
+                <Link href={`/tasks?reportId=${drive.reports?.[0]?.id}`}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shadow-gentle hover:shadow-accent transition-smooth"
+                  >
+                    Tasks
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  className="forest-gradient text-white shadow-gentle hover:shadow-accent transition-smooth"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/volunteer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ driveId: drive.id }),
+                      });
+
+                      if (!res.ok) {
+                        const err = await res.json();
+                        alert(err.error || "Failed to volunteer");
+                        return;
+                      }
+
+                      const data = await res.json();
+                      window.location.href = `/tasks?reportId=${data.reportId}`;
+                    } catch (e) {
+                      console.error(e);
+                      alert("Something went wrong");
+                    }
+                  }}
+                >
+                  Volunteer
+                </Button>
+              </div>
+            )}
+
+            {drive.status === "COMPLETED" && (
+              <Button size="sm" disabled variant="secondary">
+                Completed
+              </Button>
+            )}
+          </div>
+        </CardFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
