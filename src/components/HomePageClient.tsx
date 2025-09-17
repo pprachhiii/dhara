@@ -50,7 +50,7 @@ export default function HomePageClient({ initialReports, initialDrives, initialV
       {/* Hero */}
       <section className="relative rounded-2xl overflow-hidden shadow-elevated">
         <div className="absolute inset-0">
-          <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-blue-600" />
+          <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-green-600" />
           <div className="absolute inset-0">
             <Image
               src={heroImage} 

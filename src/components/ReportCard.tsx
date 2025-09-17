@@ -6,14 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users } from "lucide-react";
 import { Report, ReportStatus, Task, ReportAuthority } from "@/lib/types";
-import Link from "next/link";
 
 interface ReportCardProps {
   report: Report & {
     votes?: Report["unifiedVotes"];
     tasks?: Task[];
     reportAuthorities?: ReportAuthority[];
-    drives?: { id: string }[]; // drives linked to the report
+    drives?: { id: string }[];
   };
   showVoting?: boolean;
   showAuthorityContact?: boolean;
@@ -91,100 +90,59 @@ export function ReportCard({
 
       <CardFooter className="pt-4 border-t bg-muted/20">
         <div className="flex items-center justify-between w-full">
-          {/* View Details Button */}
           <Button variant="outline" size="sm" onClick={onViewDetails}>
             View Details
           </Button>
 
-          {/* Dynamic Status Button */}
           {(() => {
-            const now = new Date();
-            const sevenDaysAgo = new Date(now);
-            sevenDaysAgo.setDate(now.getDate() - 7);
-
-            const driveCount = report.drives?.length ?? 0;
-            const votesCount = report.votes?.length ?? 0;
-
             switch (report.status) {
-              // Phase 1: Report Submitted
               case "PENDING":
                 return (
                   <Button
                     className="bg-red-500 hover:bg-red-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/authority")}
+                    onClick={() => (window.location.href = "/authorities")}
                   >
                     Contact Authority
                   </Button>
                 );
-              
-              // Phase 2: Authority Contacted
+
               case "AUTHORITY_CONTACTED":
-                if (new Date(report.updatedAt) <= sevenDaysAgo && votesCount > 10) {
-                  // Eligible for Drive
-                  if (driveCount === 0) {
-                    return (
-                      <Button
-                        className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
-                        onClick={() => (window.location.href = "/form?model=Drive")}
-                      >
-                        Create Drive
-                      </Button>
-                    );
-                  } else if (driveCount > 1) {
-                    return (
-                      <Button
-                        className="bg-yellow-400 hover:bg-yellow-500 text-black shadow-md transition"
-                        onClick={() => (window.location.href = "/drives/votes")}
-                      >
-                        Vote For Drive
-                      </Button>
-                    );
-                  }
-                }
                 return (
                   <Button className="bg-gray-300 text-black cursor-default" disabled>
                     Authority Contacted
                   </Button>
                 );
 
-              // Drive Phase
-              case "ELIGIBLE_FOR_DRIVE":
-                if (driveCount === 1 || driveCount === 0 ) {
-                  return (
-                    <Button
-                      className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
-                      onClick={() => (window.location.href = "/form?model=Drive")}
-                    >
-                      Create Drive
-                    </Button>
-                  );
-                } else if (driveCount > 1) {
-                  return (
-                    <Button
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black shadow-md transition"
-                      onClick={() => (window.location.href = "/drives/votes")}
-                    >
-                      Vote For Drive
-                    </Button>
-                  );
-                }
-                return null;
-
-              // Voting Finalized
-              case "VOTING_FINALIZED":
+              case "RESOLVED_BY_AUTHORITY":
                 return (
-                  <Link href="/tasks">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shadow-gentle hover:shadow-accent transition-smooth"
-                    >
-                      Tasks
-                    </Button>
-                  </Link>
+                  <Button
+                    className="bg-blue-500 hover:bg-blue-600 text-white shadow-md transition"
+                    onClick={() => (window.location.href = "/enhancement")}
+                  >
+                    Resolved by Authority
+                  </Button>
                 );
 
-              // In Progress: show both Task + Volunteer
+              case "ELIGIBLE_FOR_VOTE":
+                return (
+                  <Button
+                    className="bg-purple-500 hover:bg-purple-600 text-white shadow-md transition"
+                    onClick={() => (window.location.href = "/report/votes")}
+                  >
+                    Eligible for Vote
+                  </Button>
+                );
+
+              case "VOTING_FINALIZED":
+                return (
+                  <Button
+                    className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
+                    onClick={() => (window.location.href = "/drive/newDriveService")}
+                  >
+                    Create Drive
+                  </Button>
+                );
+
               case "IN_PROGRESS":
                 return (
                   <div className="flex gap-2">
@@ -195,15 +153,41 @@ export function ReportCard({
                       Task
                     </Button>
                     <Button
-                      className="bg-blue-500 hover:bg-blue-600 text-white shadow-md transition"
-                      onClick={() => (window.location.href = "/form?model=Volunteer")}
+                      className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch("/api/volunteer", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ reportId: report.id, driveId: report.drives?.[0]?.id }),
+                          });
+
+                          if (!res.ok) {
+                            const err = await res.json();
+                            alert(err.error || "Failed to volunteer");
+                            return;
+                          }
+
+                          window.location.href = "/tasks";
+                        } catch (e) {
+                          console.error(e);
+                          alert("Something went wrong");
+                        }
+                      }}
                     >
                       Volunteer
                     </Button>
+
                   </div>
                 );
 
-              // Resolved
+              case "UNDER_MONITORING":
+                return (
+                  <Button className="bg-gray-300 text-black cursor-default" disabled>
+                    Under Monitoring
+                  </Button>
+                );
+
               case "RESOLVED":
                 return (
                   <Button className="bg-gray-300 text-black cursor-default" disabled>

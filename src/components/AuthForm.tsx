@@ -125,7 +125,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <p className="text-right mt-1">
             <Link
               href="/password/forget-password"
-              className="text-blue-600 hover:underline text-sm"
+              className="text-green-600 hover:underline text-sm"
             >
               Forgot Password?
             </Link>
@@ -145,14 +145,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
         {mode === "login" ? (
           <>
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-blue-600 hover:underline">
+            <Link href="/auth/register" className="text-green-600 hover:underline">
               Register
             </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:underline">
+            <Link href="/auth/login" className="text-green-600 hover:underline">
               Login
             </Link>
           </>

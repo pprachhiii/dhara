@@ -173,7 +173,7 @@ export default function AuthoritiesPage() {
                         href={auth.website}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 underline"
+                        className="text-green-600 underline"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Visit
@@ -214,7 +214,7 @@ export default function AuthoritiesPage() {
                   href={selectedAuthority.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-600 underline"
+                  className="text-green-600 underline"
                 >
                   Visit
                 </a>

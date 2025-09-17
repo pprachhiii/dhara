@@ -133,7 +133,7 @@ export default function DriveForm() {
   const getComfortLevelColor = (level: EngagementLevel) => {
     switch (level) {
       case EngagementLevel.INDIVIDUAL:
-        return "bg-blue-100 text-blue-800";
+        return "bg-green-100 text-green-800";
       case EngagementLevel.PAIR:
         return "bg-yellow-100 text-yellow-800";
       case EngagementLevel.GROUP:

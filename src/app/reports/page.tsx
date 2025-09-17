@@ -20,16 +20,13 @@ import { Report } from "@/lib/types";
 
 export default function Reports() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [expandedSections, setExpandedSections] = useState<{
-    [key: string]: boolean;
-  }>({});
-
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const { reports, setReports } = useAppStore();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
 
-  // Fetch reports from API
+  // Fetch reports
   useEffect(() => {
     const fetchReports = async (): Promise<void> => {
       try {
@@ -41,7 +38,6 @@ export default function Reports() {
         console.error("Error fetching reports:", err);
       }
     };
-
     fetchReports();
   }, [setReports]);
 
@@ -50,8 +46,7 @@ export default function Reports() {
       const matchesSearch =
         report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || report.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || report.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a: Report, b: Report) => {
@@ -67,6 +62,7 @@ export default function Reports() {
       }
     });
 
+  // Map reports for card
   const mapReportForCard = (report: Report): Report => ({
     ...report,
     unifiedVotes: report.unifiedVotes?.map((v) => ({
@@ -108,61 +104,26 @@ export default function Reports() {
     })),
   });
 
-  // ---- SECTION FILTERS ----
-
-  const createDriveReports: Report[] = filteredReports.filter(
-    (r) => r.status === ReportStatus.ELIGIBLE_FOR_DRIVE
-  );
-
-  const authorityContactReports: Report[] = filteredReports.filter(
-    (r) =>
-      r.status === ReportStatus.PENDING ||
-      r.status === ReportStatus.AUTHORITY_CONTACTED
-  );
-
-  const votingReports: Report[] = filteredReports.filter((r) => {
-    const isOlderThanAWeek =
-      r.status === ReportStatus.AUTHORITY_CONTACTED &&
-      new Date().getTime() - new Date(r.updatedAt).getTime() >
-        7 * 24 * 60 * 60 * 1000;
-    const hasMultipleDrives =
-      (r.tasks?.filter((t) => t.driveId !== null).length ?? 0) > 1;
-    return isOlderThanAWeek || hasMultipleDrives;
-  });
-
-  const inProgressReports: Report[] = filteredReports.filter(
-    (r) =>
-      r.status === ReportStatus.IN_PROGRESS ||
-      r.status === ReportStatus.VOTING_FINALIZED
-  );
-
-  const resolvedReports: Report[] = filteredReports.filter(
-    (r) => r.status === ReportStatus.RESOLVED
-  );
-
-  // Helper to render a section with collapse/expand
+  // Section Renderer
   const renderSection = (
     title: string,
-    reportsArray: Report[],
-    sectionKey: string,
     description: string,
-    cardProps?: { showVoting?: boolean; showCreateDrive?: boolean; showAuthorityContact?: boolean }
+    reportsArray: Report[],
+    sectionKey: string
   ) => {
     if (reportsArray.length === 0) return null;
-
     const isExpanded = expandedSections[sectionKey] ?? false;
     const visibleReports = isExpanded ? reportsArray : reportsArray.slice(0, 3);
 
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">{title} ({reportsArray.length})</h2>
+        <h2 className="text-2xl font-bold">{title} ({reportsArray.length})</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {visibleReports.map((report) => (
             <ReportCard
               key={report.id}
               report={mapReportForCard(report)}
-              {...cardProps}
               onViewDetails={() => setSelectedReport(report)}
             />
           ))}
@@ -185,18 +146,82 @@ export default function Reports() {
     );
   };
 
+  // Group reports by status
+  const hubs = [
+    {
+      key: "pending",
+      title: "📌 Pending Hub",
+      description: "Newly submitted reports awaiting review or initial action.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.PENDING),
+    },
+    {
+      key: "authorityContacted",
+      title: "🏛️ Authority Contacted Hub",
+      description: "Reports that have been forwarded to authorities and awaiting response.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.AUTHORITY_CONTACTED),
+    },
+    {
+      key: "resolvedByAuthority",
+      title: "✅ Resolved by Authority Hub",
+      description: "Reports successfully resolved by relevant authorities.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.RESOLVED_BY_AUTHORITY),
+    },
+    {
+      key: "eligibleForVote",
+      title: "🗳️ Community Voting Hub",
+      description: "Reports open for community voting to decide next steps.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.ELIGIBLE_FOR_VOTE),
+    },
+    {
+      key: "votingFinalized",
+      title: "📊 Voting Finalized Hub",
+      description: "Reports where voting is complete and actions are being planned.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.VOTING_FINALIZED),
+    },
+    {
+      key: "eligibleForDrive",
+      title: "🚀 Eligible for Drive Hub",
+      description: "Reports identified as eligible for environmental drives and campaigns.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.ELIGIBLE_FOR_DRIVE),
+    },
+    {
+      key: "driveFinalized",
+      title: "🌱 Drive Finalized Hub",
+      description: "Reports where community drives have been successfully completed.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.DRIVE_FINALIZED),
+    },
+    {
+      key: "inProgress",
+      title: "⚒️ In Progress Hub",
+      description: "Reports actively being worked on by community or authorities.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.IN_PROGRESS),
+    },
+    {
+      key: "underMonitoring",
+      title: "👀 Under Monitoring Hub",
+      description: "Reports under ongoing observation to ensure long-term resolution.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.UNDER_MONITORING),
+    },
+    {
+      key: "resolved",
+      title: "🏆 Resolved Hub",
+      description: "Reports that have been completely resolved and closed.",
+      reports: filteredReports.filter((r) => r.status === ReportStatus.RESOLVED),
+    },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Community Reports</h1>
+          <h1 className="text-3xl font-bold text-foreground">Community Reports Hub</h1>
           <p className="text-muted-foreground">
-            Track environmental issues and community initiatives across India
+            Organized hubs based on report lifecycle stages for clear tracking and action.
           </p>
         </div>
         <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md"
           asChild
         >
           <Link href="/reports/new">
@@ -210,7 +235,7 @@ export default function Reports() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search reports by title or description..."
+            placeholder="Search reports..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -244,64 +269,23 @@ export default function Reports() {
         </Select>
       </div>
 
-      {/* Sections */}
-      {renderSection(
-        "Create Drive Hub",
-        createDriveReports,
-        "createDrive",
-        "These reports are eligible for new environmental drives. Volunteers can initiate and organize clean-up or awareness campaigns.",
-        { showCreateDrive: true }
-      )}
-
-      {renderSection(
-        "Authority Contact Hub",
-        authorityContactReports,
-        "authorityContact",
-        "Reports pending or already contacted by authority.",
-        { showAuthorityContact: true }
-      )}
-
-      {renderSection(
-        "Community Voting Hub",
-        votingReports,
-        "voting",
-        "Reports that need community votes (older than a week or with multiple drives).",
-        { showVoting: true }
-      )}
-
-      {renderSection(
-        "In Progress",
-        inProgressReports,
-        "inProgress",
-        "Reports that are being worked on or finalized."
-      )}
-
-      {renderSection(
-        "Resolved",
-        resolvedReports,
-        "resolved",
-        "Reports that have been successfully resolved."
-      )}
+      {/* Status Hubs */}
+      {hubs.map((hub) => renderSection(hub.title, hub.description, hub.reports, hub.key))}
 
       {/* Empty State */}
       {filteredReports.length === 0 && (
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 mx-auto mb-4 bg-blue-600 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-green-600 rounded-full flex items-center justify-center">
               <Search className="h-8 w-8 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              No reports found
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">No reports found</h3>
             <p className="text-muted-foreground mb-6">
               {searchTerm || statusFilter !== "all"
-                ? "Try adjusting your search or filters."
-                : "Be the first to submit a community report!"}
+                ? "Try adjusting your filters."
+                : "Be the first to submit a report!"}
             </p>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
-              asChild
-            >
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl" asChild>
               <Link href="/reports/new">
                 <Plus className="h-4 w-4 mr-2" /> Submit First Report
               </Link>
@@ -310,16 +294,12 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Overlay: FIXED */}
+      {/* Report Detail Overlay */}
       {selectedReport && (
         <ReportDetailPage
           report={{
             ...selectedReport,
-            reporter: selectedReport.reporter ?? {
-              id: "unknown",
-              email: "Unknown",
-              role: "USER",
-            },
+            reporter: selectedReport.reporter ?? { id: "unknown", email: "Unknown", role: "USER" },
           }}
           onClose={() => setSelectedReport(null)}
         />

@@ -119,11 +119,16 @@ export default function ReportForm({ reportId }: ReportFormProps) {
       city: c.address.city || c.address.town || c.address.village || "",
       region: c.address.state || "",
       country: c.address.country || "",
-      pinCode: "",
+      pinCode: c.address.postcode || "",
     });
+
+    // Only display the city name in the input
+    setCityQuery(c.address.city || c.address.town || c.address.village || "");
+    
+    // Close autocomplete
     setCityResults([]);
-    setCityQuery(c.display_name);
   };
+
 
   const validatePin = async () => {
     if (!formData.city || !formData.country || !formData.pinCode) return;
@@ -332,12 +337,16 @@ export default function ReportForm({ reportId }: ReportFormProps) {
                 type="file"
                 id="media-upload"
                 accept="image/*,video/*"
+                multiple   //allow selecting multiple files
                 className="hidden"
                 onChange={(e) => {
-                  if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
+                  if (e.target.files) {
+                    Array.from(e.target.files).forEach((file) => handleFileUpload(file));
+                  }
                   e.target.value = "";
                 }}
               />
+
               <Button
                 type="button"
                 variant="outline"
