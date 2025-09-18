@@ -1,21 +1,23 @@
-// src/app/reports/votes/page.tsx
 "use client";
 
 import { useAppStore } from "@/lib/stores";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import { Heart, MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ReportWithVotes, Vote } from "@/lib/types";
+import { DiscussionSection } from "@/components/DiscussionSection";
 
 const VotingReports = () => {
-  // 💡 Grab the new userLoading state and fetchCurrentUser action
-  const { reports, fetchReports, currentUser, userLoading, fetchCurrentUser } = useAppStore();
-  const [selectedReport, setSelectedReport] = useState<ReportWithVotes | null>(null);
+  const { reports, fetchReports, currentUser, userLoading, fetchCurrentUser } =
+    useAppStore();
+  const [selectedReport, setSelectedReport] =
+    useState<ReportWithVotes | null>(null);
+  const [showDiscussion, setShowDiscussion] = useState(false);
 
   useEffect(() => {
     fetchReports();
-    fetchCurrentUser(); // 💡 Make sure the user is fetched when the component mounts
+    fetchCurrentUser();
   }, [fetchReports, fetchCurrentUser]);
 
   const allReports = useMemo<ReportWithVotes[]>(
@@ -27,14 +29,12 @@ const VotingReports = () => {
     [reports]
   );
 
-  // Top 3 by votes
   const topReports = allReports
     .filter((r) => r.votes.length > 0)
     .sort((a, b) => b.votes.length - a.votes.length)
     .slice(0, 3);
 
   const handleVote = async (reportId: string) => {
-    // 💡 Add a safety check to prevent the function from running if user is null
     if (!currentUser) return;
 
     const targetReport = allReports.find((r) => r.id === reportId);
@@ -43,7 +43,7 @@ const VotingReports = () => {
     const optimisticVote: Vote = {
       id: crypto.randomUUID(),
       reportId,
-      userId: currentUser.id, // This line is now safe
+      userId: currentUser.id,
       user: currentUser,
       createdAt: new Date(),
     };
@@ -69,7 +69,6 @@ const VotingReports = () => {
       if (!res.ok) {
         const { error } = await res.json();
         console.error("Vote failed:", error);
-
         useAppStore.setState({ reports: prevReports });
         return;
       }
@@ -82,127 +81,155 @@ const VotingReports = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Vote on Reports</h1>
-        <p className="text-muted-foreground">Support important community reports by voting on them</p>
-      </div>
+    <div className="container mx-auto px-6 py-10 flex gap-6">
+      {/* 🔹 Main Content */}
+      <div className="flex-1">
+        <header className="mb-10 text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight text-foreground mb-3">
+            Vote on Reports
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Support important community reports by casting your vote and joining
+            discussions.
+          </p>
+        </header>
 
-      {/* Each Report as full-width horizontal card */}
-      <div className="space-y-4">
-        {allReports.map((report) => (
-          <Card
-            key={report.id}
-            onClick={() => setSelectedReport(report)}
-            className="cursor-pointer hover:shadow-lg transition"
-          >
-            <CardHeader className="flex flex-row justify-between items-center bg-muted px-4 py-3">
-              <CardTitle className="text-lg font-semibold">{report.title}</CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-red-500 font-semibold">
-                  <Heart className="h-5 w-5 fill-current" />
-                  {report.votes.length}
+        {/* Report List */}
+        <div className="grid gap-6">
+          {allReports.map((report) => (
+            <Card
+              key={report.id}
+              className="hover:shadow-xl transition border rounded-xl"
+            >
+              <CardHeader className="flex flex-row justify-between items-center px-6 py-4 bg-muted/30 rounded-t-xl">
+                <CardTitle className="text-lg font-semibold">
+                  {report.title}
+                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 text-red-500 font-semibold">
+                    <Heart className="h-5 w-5 fill-current" />
+                    {report.votes.length}
+                  </div>
+
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleVote(report.id);
+                    }}
+                    variant="default"
+                    size="sm"
+                    className="bg-red-500 hover:bg-red-600 text-white"
+                    disabled={userLoading || !currentUser}
+                  >
+                    {userLoading ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        <Heart className="h-4 w-4 mr-1 fill-current" />
+                        Vote
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedReport(report);
+                      setShowDiscussion(true);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Discussion
+                  </Button>
                 </div>
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleVote(report.id);
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="hover:bg-red-500 hover:text-white"
-                  disabled={userLoading || !currentUser} // 💡 This is the key change
-                >
-                  {userLoading ? (
-                    'Loading...'
-                  ) : (
-                    <>
-                      <Heart className="h-4 w-4 mr-1 text-red-500 fill-current" />
-                      Vote
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+              </CardHeader>
 
-      {/* Top 3 Stage Layout */}
-      <div className="mt-16">
-        <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
-          🏆 Top 3 Reports
-        </h2>
+              <CardContent className="px-6 py-4 text-sm text-muted-foreground">
+                {report.description || "No description provided."}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        <div className="flex justify-center items-end text-center w-full">
-          {/* Silver */}
-          {topReports[1] && (
-            <div className="flex-1">
+        {/* Top 3 Stage */}
+        <section className="mt-20">
+          <h2 className="text-2xl font-bold text-foreground mb-8 text-center">
+            🏆 Top 3 Reports
+          </h2>
+
+          <div className="flex justify-center items-end text-center gap-6">
+            {/* Silver */}
+            {topReports[1] && (
               <div
-                className="bg-gray-200 h-48 flex flex-col justify-center items-center border cursor-pointer hover:shadow-md"
-                onClick={() => setSelectedReport(topReports[1])}
+                className="flex-1 bg-gradient-to-t from-gray-200 to-gray-100 h-48 flex flex-col justify-center items-center rounded-lg shadow cursor-pointer hover:shadow-lg transition"
+                onClick={() => {
+                  setSelectedReport(topReports[1]);
+                  setShowDiscussion(false);
+                }}
               >
                 <h3 className="font-semibold">{topReports[1].title}</h3>
-                <div className="flex items-center justify-center gap-1 text-red-500 font-medium">
+                <div className="flex items-center gap-1 text-red-500 font-medium">
                   <Heart className="h-5 w-5 fill-current" />
                   {topReports[1].votes.length}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Gold */}
-          {topReports[0] && (
-            <div className="flex-1">
+            {/* Gold */}
+            {topReports[0] && (
               <div
-                className="bg-yellow-200 h-64 flex flex-col justify-center items-center border cursor-pointer hover:shadow-md"
-                onClick={() => setSelectedReport(topReports[0])}
+                className="flex-1 bg-gradient-to-t from-yellow-300 to-yellow-100 h-64 flex flex-col justify-center items-center rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition"
+                onClick={() => {
+                  setSelectedReport(topReports[0]);
+                  setShowDiscussion(false);
+                }}
               >
                 <h3 className="font-semibold">{topReports[0].title}</h3>
-                <div className="flex items-center justify-center gap-1 text-red-500 font-medium">
+                <div className="flex items-center gap-1 text-red-500 font-medium">
                   <Heart className="h-5 w-5 fill-current" />
                   {topReports[0].votes.length}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Bronze */}
-          {topReports[2] && (
-            <div className="flex-1">
+            {/* Bronze */}
+            {topReports[2] && (
               <div
-                className="bg-orange-200 h-40 flex flex-col justify-center items-center border cursor-pointer hover:shadow-md"
-                onClick={() => setSelectedReport(topReports[2])}
+                className="flex-1 bg-gradient-to-t from-orange-300 to-orange-100 h-40 flex flex-col justify-center items-center rounded-lg shadow cursor-pointer hover:shadow-lg transition"
+                onClick={() => {
+                  setSelectedReport(topReports[2]);
+                  setShowDiscussion(false);
+                }}
               >
                 <h3 className="font-semibold">{topReports[2].title}</h3>
-                <div className="flex items-center justify-center gap-1 text-red-500 font-medium">
+                <div className="flex items-center gap-1 text-red-500 font-medium">
                   <Heart className="h-5 w-5 fill-current" />
                   {topReports[2].votes.length}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </section>
       </div>
 
-      {/* Overlay - Report Details */}
-      {selectedReport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-lg w-full shadow-lg relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-black"
-              onClick={() => setSelectedReport(null)}
-            >
-              ✕
-            </button>
-            <h2 className="text-xl font-bold mb-4">{selectedReport.title}</h2>
-            <p className="text-muted-foreground mb-4">{selectedReport.description}</p>
-            <div className="flex items-center gap-2 text-red-500">
-              <Heart className="h-5 w-5 fill-current" />
-              {selectedReport.votes.length} votes
-            </div>
-          </div>
+      {/* 🔹 Discussion Panel (Now on the RIGHT) */}
+      {showDiscussion && selectedReport && (
+        <div className="w-1/4 pl-4 border-l bg-muted/40 rounded-lg shadow-inner relative">
+          {/* Close Button */}
+          <button
+            onClick={() => setShowDiscussion(false)}
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted"
+          >
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+
+          <DiscussionSection
+            phase="REPORT_VOTING"
+            reportId={selectedReport.id}
+          />
         </div>
       )}
     </div>

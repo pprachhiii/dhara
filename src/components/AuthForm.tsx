@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Eye, EyeOff } from "lucide-react"; // Add lucide-react for icons
+import { Eye, EyeOff } from "lucide-react"; 
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -113,7 +113,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+          className="absolute right-3 inset-y-0 flex items-center text-gray-500"
         >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
         </button>
