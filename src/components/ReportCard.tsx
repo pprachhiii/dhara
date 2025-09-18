@@ -127,9 +127,9 @@ export function ReportCard({
                 return (
                   <Button
                     className="bg-purple-500 hover:bg-purple-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/report/votes")}
+                    onClick={() => (window.location.href = "/reports/votes")}
                   >
-                    Eligible for Vote
+                    Vote
                   </Button>
                 );
 

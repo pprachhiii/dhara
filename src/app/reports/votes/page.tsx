@@ -1,40 +1,41 @@
+// src/app/reports/votes/page.tsx
 "use client";
 
 import { useAppStore } from "@/lib/stores";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ReportWithVotes, Vote } from "@/lib/types";
 
 const VotingReports = () => {
-  const { reports, fetchReports, currentUser } = useAppStore();
+  // 💡 Grab the new userLoading state and fetchCurrentUser action
+  const { reports, fetchReports, currentUser, userLoading, fetchCurrentUser } = useAppStore();
   const [selectedReport, setSelectedReport] = useState<ReportWithVotes | null>(null);
 
   useEffect(() => {
     fetchReports();
-  }, [fetchReports]);
+    fetchCurrentUser(); // 💡 Make sure the user is fetched when the component mounts
+  }, [fetchReports, fetchCurrentUser]);
 
-  // Cast reports into frontend shape
-  const allReports: ReportWithVotes[] = reports.map((r) => ({
-    ...r,
-    votes: r.unifiedVotes ?? [],
-  }));
+  const allReports = useMemo<ReportWithVotes[]>(
+    () =>
+      reports.map((r) => ({
+        ...r,
+        votes: r.unifiedVotes ?? [],
+      })),
+    [reports]
+  );
 
   // Top 3 by votes
-  const topReports = [...allReports]
+  const topReports = allReports
+    .filter((r) => r.votes.length > 0)
     .sort((a, b) => b.votes.length - a.votes.length)
     .slice(0, 3);
 
   const handleVote = async (reportId: string) => {
-    if (!currentUser) {
-      console.error("User must be logged in to vote");
-      return;
-    }
+    // 💡 Add a safety check to prevent the function from running if user is null
+    if (!currentUser) return;
 
     const targetReport = allReports.find((r) => r.id === reportId);
     if (!targetReport) return;
@@ -42,7 +43,7 @@ const VotingReports = () => {
     const optimisticVote: Vote = {
       id: crypto.randomUUID(),
       reportId,
-      userId: currentUser.id,
+      userId: currentUser.id, // This line is now safe
       user: currentUser,
       createdAt: new Date(),
     };
@@ -62,22 +63,21 @@ const VotingReports = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reportId }),
+        credentials: "include",
       });
 
       if (!res.ok) {
         const { error } = await res.json();
         console.error("Vote failed:", error);
 
-        // ❌ Rollback optimistic update
         useAppStore.setState({ reports: prevReports });
         return;
       }
 
-      // ✅ Replace optimistic with real DB state
       await fetchReports();
     } catch (err) {
       console.error("Error voting on report:", err);
-      useAppStore.setState({ reports: prevReports }); // rollback
+      useAppStore.setState({ reports: prevReports });
     }
   };
 
@@ -85,12 +85,8 @@ const VotingReports = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Vote on Reports
-        </h1>
-        <p className="text-muted-foreground">
-          Support important community reports by voting on them
-        </p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Vote on Reports</h1>
+        <p className="text-muted-foreground">Support important community reports by voting on them</p>
       </div>
 
       {/* Each Report as full-width horizontal card */}
@@ -102,9 +98,7 @@ const VotingReports = () => {
             className="cursor-pointer hover:shadow-lg transition"
           >
             <CardHeader className="flex flex-row justify-between items-center bg-muted px-4 py-3">
-              <CardTitle className="text-lg font-semibold">
-                {report.title}
-              </CardTitle>
+              <CardTitle className="text-lg font-semibold">{report.title}</CardTitle>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-red-500 font-semibold">
                   <Heart className="h-5 w-5 fill-current" />
@@ -118,9 +112,16 @@ const VotingReports = () => {
                   variant="outline"
                   size="sm"
                   className="hover:bg-red-500 hover:text-white"
+                  disabled={userLoading || !currentUser} // 💡 This is the key change
                 >
-                  <Heart className="h-4 w-4 mr-1 text-red-500 fill-current" />
-                  Vote
+                  {userLoading ? (
+                    'Loading...'
+                  ) : (
+                    <>
+                      <Heart className="h-4 w-4 mr-1 text-red-500 fill-current" />
+                      Vote
+                    </>
+                  )}
                 </Button>
               </div>
             </CardHeader>
@@ -196,9 +197,7 @@ const VotingReports = () => {
               ✕
             </button>
             <h2 className="text-xl font-bold mb-4">{selectedReport.title}</h2>
-            <p className="text-muted-foreground mb-4">
-              {selectedReport.description}
-            </p>
+            <p className="text-muted-foreground mb-4">{selectedReport.description}</p>
             <div className="flex items-center gap-2 text-red-500">
               <Heart className="h-5 w-5 fill-current" />
               {selectedReport.votes.length} votes

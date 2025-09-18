@@ -1,3 +1,4 @@
+// src/lib/stores.ts
 import { create } from "zustand";
 import {
   User,
@@ -32,6 +33,7 @@ interface AppStore {
   currentUser: User | null;
   reports: Report[];
   drives: Drive[];
+  userLoading: boolean; // 💡 Added state to track user loading status
 
   setUser: (user: User | null) => void;
   setReports: (reports: Report[]) => void;
@@ -39,6 +41,7 @@ interface AppStore {
 
   fetchReports: () => Promise<void>;
   fetchDrives: () => Promise<void>;
+  fetchCurrentUser: () => Promise<void>; // 💡 Added function to fetch user data
 
   voteOnReport: (reportId: string) => void;
   contactAuthority: (reportId: string, authorityId: string) => void;
@@ -55,14 +58,30 @@ export const useAppStore = create<AppStore>((set, get) => ({
   currentUser: null,
   reports: [],
   drives: [],
+  userLoading: true, // 💡 Initial state is loading
 
   setUser: (user) => set({ currentUser: user }),
   setReports: (reports) => set({ reports }),
   setDrives: (drives) => set({ drives }),
 
+  fetchCurrentUser: async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const user = await res.json();
+        set({ currentUser: user, userLoading: false });
+      } else {
+        set({ currentUser: null, userLoading: false });
+      }
+    } catch (err) {
+      console.error("Error fetching user:", err);
+      set({ currentUser: null, userLoading: false });
+    }
+  },
+
   fetchReports: async () => {
     try {
-      const res = await fetch("/api/reports");
+      const res = await fetch("/api/reports?status=ELIGIBLE_FOR_VOTE");
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data: Report[] = await res.json();
       set({ reports: data });
@@ -92,7 +111,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const alreadyVoted = targetReport.unifiedVotes?.some(
       (v) => v.userId === currentUser.id
     );
-    if (alreadyVoted) return; // prevent duplicate votes
+    if (alreadyVoted) return;
 
     const vote: Vote = {
       id: crypto.randomUUID(),
@@ -108,7 +127,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ? {
             ...r,
             unifiedVotes: [...(r.unifiedVotes ?? []), vote],
-            finalVoteCount: ((r.finalVoteCount ?? 0) + 1),
+            finalVoteCount: (r.finalVoteCount ?? 0) + 1,
           }
         : r
     );
@@ -151,7 +170,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const alreadyVoted = targetDrive.unifiedVotes?.some(
       (v) => v.userId === currentUser.id
     );
-    if (alreadyVoted) return; // prevent duplicate votes
+    if (alreadyVoted) return;
 
     const vote: Vote = {
       id: crypto.randomUUID(),
@@ -167,7 +186,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ? {
             ...d,
             unifiedVotes: [...(d.unifiedVotes ?? []), vote],
-            finalVoteCount: ((d.finalVoteCount ?? 0) + 1),
+            finalVoteCount: (d.finalVoteCount ?? 0) + 1,
           }
         : d
     );
