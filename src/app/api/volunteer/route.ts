@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/serverAuth";
 import { Context } from "@/lib/context";
 
-export async function POST(req: NextRequest) {
+// POST /api/volunteer
+export async function POST(req: NextRequest): Promise<NextResponse> {
   const auth = await requireAuth(req);
   if (auth.error || !auth.user) return auth.response!;
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // If joining through drive, also link DriveVolunteer
+    // If joining through drive, link DriveVolunteer
     let finalReportId = reportId;
     if (driveId) {
       const drive = await prisma.drive.findUnique({
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
         create: { driveId, volunteerId: volunteer.id },
       });
 
-      // Pick first linked report (every drive has reports in schema)
+      // Pick first linked report (every drive has reports)
       finalReportId = drive.reports[0]?.reportId ?? null;
     }
 
@@ -55,18 +56,19 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// GET /api/volunteer?id=...
 export async function GET(
   req: NextRequest,
-  context : Context
-) {
+  context: Context
+): Promise<NextResponse> {
   const auth = await requireAuth(req);
   if (auth.error || !auth.user) return auth.response!;
 
   try {
-    const {id} = await context.params;
+    const { id } = await context.params;
 
     const report = await prisma.report.findUnique({
-      where: { id: id },
+      where: { id },
       include: {
         tasks: {
           include: {
@@ -83,7 +85,7 @@ export async function GET(
 
     return NextResponse.json({ tasks: report.tasks });
   } catch (err) {
-    console.error("GET /api/reports/[id]/tasks error:", err);
+    console.error("GET /api/volunteer error:", err);
     return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
   }
 }
