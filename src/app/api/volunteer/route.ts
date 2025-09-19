@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/serverAuth";
-import { Context } from "@/lib/context";
 
 // POST /api/volunteer
 export async function POST(req: NextRequest) {
@@ -55,31 +54,31 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/volunteer/:id
-export async function GET(req: NextRequest, context: Context) {
+// GET /api/volunteer
+export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth.error || !auth.user) return auth.response!;
 
   try {
-    const { id } = await context.params;
-
-    const report = await prisma.report.findUnique({
-      where: { id },
+    // Return the authenticated volunteer’s tasks
+    const volunteer = await prisma.volunteer.findUnique({
+      where: { userId: auth.user.id },
       include: {
         tasks: {
           include: {
             volunteer: { include: { user: true } },
             drive: true,
+            report: true,
           },
         },
       },
     });
 
-    if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!volunteer) {
+      return NextResponse.json({ error: "Volunteer not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ tasks: report.tasks });
+    return NextResponse.json({ tasks: volunteer.tasks });
   } catch (err) {
     console.error("GET /api/volunteer error:", err);
     return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
