@@ -17,6 +17,8 @@ type ModelType = "Task" | "Authority";
 
 interface TaskForm {
   id?: string;
+  title: string;
+  description: string;
   reportId?: string;
   driveId?: string;
   volunteerId?: string;
@@ -51,7 +53,7 @@ interface CreateFormProps<T extends FormState> {
 interface Field {
   name: string;
   label: string;
-  type: "text" | "textarea" | "number" | "datetime-local" | "select";
+  type: "text" | "textarea" | "number" | "datetime-local" | "select" | "hidden";
   options?: readonly string[];
 }
 
@@ -72,7 +74,7 @@ const TASK_STATUSES: TaskStatus[] = Object.values(TaskStatus);
 const AUTHORITY_CATEGORIES: AuthorityCategory[] = Object.values(AuthorityCategory);
 const AUTHORITY_ROLES: AuthorityRole[] = Object.values(AuthorityRole);
 
-// ---------- Reducer ----------
+// Reducer
 type FormAction<T> =
   | { type: "SET"; payload: Partial<T> }
   | { type: "UPDATE"; field: keyof T; value: string | number | boolean };
@@ -91,12 +93,11 @@ function formReducer<T extends FormState>(
   }
 }
 
-// ---------- Helper for deep equality ----------
+// Deep equal helper
 function isEqual<T>(obj1: T, obj2: T): boolean {
   return JSON.stringify(obj1) === JSON.stringify(obj2);
 }
 
-// ---------- Component ----------
 export default function CreateForm<T extends FormState>({
   model,
   initialValues = {} as Partial<T>,
@@ -111,7 +112,8 @@ export default function CreateForm<T extends FormState>({
   const [cityQuery, setCityQuery] = useState("");
   const [cityResults, setCityResults] = useState<NominatimResult[]>([]);
 
-  // Update form when initialValues change
+  const isEdit = Boolean(initialValues?.id);
+
   useEffect(() => {
     if (!isEqual(prevInitialValues.current, initialValues)) {
       dispatch({ type: "SET", payload: initialValues });
@@ -119,9 +121,7 @@ export default function CreateForm<T extends FormState>({
     }
   }, [initialValues]);
 
-  const isEdit = Boolean(initialValues?.id);
-
-  // ---------- City autocomplete for Authority ----------
+  // City autocomplete for Authority
   useEffect(() => {
     if (!cityQuery || cityQuery.length < 2 || model !== "Authority") return;
     const controller = new AbortController();
@@ -152,28 +152,50 @@ export default function CreateForm<T extends FormState>({
     setCityResults([]);
   };
 
-  // ---------- Form fields ----------
+  // Fields
   const getFields = (): Field[] => {
     if (model === "Task") {
       return [
-        { name: "reportId", label: "Report ID", type: "text" },
-        { name: "driveId", label: "Drive ID", type: "text" },
-        { name: "volunteerId", label: "Volunteer ID", type: "text" },
-        { name: "engagement", label: "Engagement", type: "select", options: ENGAGEMENT_LEVELS },
-        { name: "status", label: "Status", type: "select", options: TASK_STATUSES },
+        { name: "title", label: "Title", type: "text" },
+        { name: "description", label: "Description", type: "textarea" },
+        { name: "reportId", label: "Report ID", type: "hidden" },
+        { name: "driveId", label: "Drive ID", type: "hidden" },
+        { name: "volunteerId", label: "Volunteer ID", type: "hidden" },
+        {
+          name: "engagement",
+          label: "Engagement",
+          type: "select",
+          options: ENGAGEMENT_LEVELS,
+        },
+        {
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: TASK_STATUSES,
+        },
         { name: "timeSlot", label: "Time Slot", type: "datetime-local" },
       ];
     } else if (model === "Authority") {
       return [
         { name: "name", label: "Name", type: "text" },
-        { name: "category", label: "Category", type: "select", options: AUTHORITY_CATEGORIES },
+        {
+          name: "category",
+          label: "Category",
+          type: "select",
+          options: AUTHORITY_CATEGORIES,
+        },
         { name: "role", label: "Role", type: "select", options: AUTHORITY_ROLES },
         { name: "city", label: "City", type: "text" },
         { name: "region", label: "Region", type: "text" },
         { name: "email", label: "Email", type: "text" },
         { name: "phone", label: "Phone", type: "text" },
         { name: "website", label: "Website", type: "text" },
-        { name: "active", label: "Active", type: "select", options: ["true", "false"] },
+        {
+          name: "active",
+          label: "Active",
+          type: "select",
+          options: ["true", "false"],
+        },
       ];
     }
     return [];
@@ -183,9 +205,9 @@ export default function CreateForm<T extends FormState>({
     dispatch({ type: "UPDATE", field: name, value });
   };
 
-  // ---------- Submit ----------
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     const endpointMap: Record<ModelType, string> = {
       Task: isEdit ? `/api/tasks/${initialValues?.id}` : "/api/tasks",
       Authority: isEdit ? `/api/authority/${initialValues?.id}` : "/api/authority",
@@ -194,7 +216,8 @@ export default function CreateForm<T extends FormState>({
     const submitData: Record<string, string | boolean | Date | undefined> = {};
     Object.entries(form).forEach(([key, value]) => {
       if (key === "active") submitData[key] = value === "true" || value === true;
-      else if (key === "timeSlot" && value) submitData[key] = new Date(value as string);
+      else if (key === "timeSlot" && value)
+        submitData[key] = new Date(value as string);
       else submitData[key] = value as string | boolean | Date | undefined;
     });
 
@@ -214,7 +237,14 @@ export default function CreateForm<T extends FormState>({
       onSuccess?.();
       onClose?.();
 
-      if (!isEdit) router.push(`/${model.toLowerCase()}`);
+      if (!isEdit) {
+        // Narrow to TaskForm to safely access reportId
+        if (model === "Task" && (form as Partial<TaskForm>).reportId) {
+          router.push(`/tasks?reportId=${(form as Partial<TaskForm>).reportId}`);
+        } else {
+          router.push(`/${model.toLowerCase()}`);
+        }
+      }
     } catch (error) {
       console.error(error);
       toast.error(`Failed to ${isEdit ? "update" : "create"} ${model}`);
@@ -239,12 +269,14 @@ export default function CreateForm<T extends FormState>({
       </h1>
 
       {fields.map((field) => {
+        if (field.type === "hidden") return null;
+
         const value = form[field.name as keyof T] ?? "";
 
-        // ---------- City autocomplete ----------
         if (field.name === "city" && model === "Authority") {
           return (
-            <div key="city" className="relative">
+            <div key="city" className="relative mb-3">
+              <label className="block text-sm font-medium mb-1">{field.label}</label>
               <Input
                 placeholder={field.label}
                 value={cityQuery}
@@ -270,57 +302,63 @@ export default function CreateForm<T extends FormState>({
 
         if (field.type === "textarea") {
           return (
-            <Textarea
-              key={field.name}
-              placeholder={field.label}
-              value={String(value)}
-              onChange={(e) => handleChange(field.name as keyof T, e.target.value)}
-              disabled={disableFields.includes(field.name as keyof T)}
-            />
+            <div key={field.name} className="mb-3">
+              <label className="block text-sm font-medium mb-1">{field.label}</label>
+              <Textarea
+                placeholder={field.label}
+                value={String(value)}
+                onChange={(e) => handleChange(field.name as keyof T, e.target.value)}
+                disabled={disableFields.includes(field.name as keyof T)}
+              />
+            </div>
           );
         }
 
         if (field.type === "select") {
           return (
-            <select
-              key={field.name}
-              value={String(value)}
-              onChange={(e) => handleChange(field.name as keyof T, e.target.value)}
-              className="border p-2 rounded w-full"
-              disabled={disableFields.includes(field.name as keyof T)}
-            >
-              <option value="">Select {field.label}</option>
-              {field.options?.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
+            <div key={field.name} className="mb-3">
+              <label className="block text-sm font-medium mb-1">{field.label}</label>
+              <select
+                value={String(value)}
+                onChange={(e) => handleChange(field.name as keyof T, e.target.value)}
+                className="border p-2 rounded w-full"
+                disabled={disableFields.includes(field.name as keyof T)}
+              >
+                <option value="">Select {field.label}</option>
+                {field.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
           );
         }
 
         return (
-          <Input
-            key={field.name}
-            type={field.type}
-            placeholder={field.label}
-            value={
-              field.type === "datetime-local"
-                ? formatDateTime(value as string | Date)
-                : String(value)
-            }
-            disabled={disableFields.includes(field.name as keyof T)}
-            onChange={(e) =>
-              handleChange(
-                field.name as keyof T,
-                field.type === "number" ? Number(e.target.value) : e.target.value
-              )
-            }
-          />
+          <div key={field.name} className="mb-3">
+            <label className="block text-sm font-medium mb-1">{field.label}</label>
+            <Input
+              type={field.type}
+              placeholder={field.label}
+              value={
+                field.type === "datetime-local"
+                  ? formatDateTime(value as string | Date)
+                  : String(value)
+              }
+              disabled={disableFields.includes(field.name as keyof T)}
+              onChange={(e) =>
+                handleChange(
+                  field.name as keyof T,
+                  field.type === "number" ? Number(e.target.value) : e.target.value
+                )
+              }
+            />
+          </div>
         );
       })}
 
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-4">
         <Button type="submit" className="flex-1">
           {isEdit ? "Update" : "Submit"} {model}
         </Button>

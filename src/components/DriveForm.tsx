@@ -18,7 +18,7 @@ import { EngagementLevel, Drive, Task, DriveReport } from "@/lib/types";
 interface TaskForm {
   title: string;
   description: string;
-  comfortLevel: EngagementLevel;
+  engagementLevel: EngagementLevel;
   reportId: string;
 }
 
@@ -49,14 +49,14 @@ export default function DriveForm() {
   const [currentTask, setCurrentTask] = useState<TaskForm>({
     title: "",
     description: "",
-    comfortLevel: EngagementLevel.GROUP,
+    engagementLevel: EngagementLevel.GROUP,
     reportId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchReports();
+    fetchReports("ELIGIBLE_FOR_DRIVE");
   }, [fetchReports]);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function DriveForm() {
           taskBreakdown: drive.tasks.map((t) => ({
             title: t.title,
             description: t.description ?? "",
-            comfortLevel: t.engagement,
+            engagementLevel: t.engagement,
             reportId: drive.reports[0]?.reportId ?? "",
           })),
         });
@@ -118,7 +118,7 @@ export default function DriveForm() {
     setCurrentTask({
       title: "",
       description: "",
-      comfortLevel: EngagementLevel.GROUP,
+      engagementLevel: EngagementLevel.GROUP,
       reportId: "",
     });
   };
@@ -130,7 +130,7 @@ export default function DriveForm() {
     }));
   };
 
-  const getComfortLevelColor = (level: EngagementLevel) => {
+  const getengagementLevelColor = (level: EngagementLevel) => {
     switch (level) {
       case EngagementLevel.INDIVIDUAL:
         return "bg-green-100 text-green-800";
@@ -165,7 +165,7 @@ export default function DriveForm() {
         tasks: formData.taskBreakdown.map((task) => ({
           title: task.title,
           description: task.description,
-          comfort: task.comfortLevel,
+          engagement: task.engagementLevel,
           reportId: task.reportId,
         })),
       };
@@ -193,7 +193,7 @@ export default function DriveForm() {
             id: crypto.randomUUID(),
             title: task.title,
             description: task.description ?? "",
-            comfort: task.engagement,
+            engagement: task.engagement,
             reportId: createdDrive.reports[0]?.reportId ?? "",
             completed: false,
           })),
@@ -273,7 +273,7 @@ export default function DriveForm() {
               </div>
 
               <div className="space-y-2">
-                <Label>Linked Report</Label>
+                <Label>Choose Report</Label>
                 {eligibleReports.length > 0 ? (
                   <div className="space-y-3 max-h-60 overflow-y-auto border rounded-lg p-3">
                     {eligibleReports.map((report) => (
@@ -321,11 +321,11 @@ export default function DriveForm() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="taskComfort" className="text-xs font-medium">Comfort Level</Label>
+                          <Label htmlFor="taskengagement" className="text-xs font-medium">engagement Level</Label>
                           <Select
-                            value={currentTask.comfortLevel}
+                            value={currentTask.engagementLevel}
                             onValueChange={(value: EngagementLevel) =>
-                              setCurrentTask((prev) => ({ ...prev, comfortLevel: value }))
+                              setCurrentTask((prev) => ({ ...prev, engagementLevel: value }))
                             }
                           >
                             <SelectTrigger>
@@ -366,7 +366,7 @@ export default function DriveForm() {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <span className="font-medium text-sm">{task.title}</span>
-                            <Badge className={getComfortLevelColor(task.comfortLevel)}>{task.comfortLevel}</Badge>
+                            <Badge className={getengagementLevelColor(task.engagementLevel)}>{task.engagementLevel}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                         </div>

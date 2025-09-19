@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma, ReportStatus } from "@prisma/client";
@@ -17,9 +18,9 @@ interface DriveInput {
   startDate: string;
   endDate?: string;
   participant?: number;
-  linkedReports?: string[];
+  linkedReports?: string[]; // multiple can be shown, but only one will be picked
   taskBreakdown?: TaskInput[];
-  reportId?: string;
+  reportId?: string; // alternate way if frontend passes just one
 }
 
 // ---------------- GET /api/drives ----------------
@@ -63,27 +64,22 @@ export async function POST(request: NextRequest) {
       reportIds = [body.reportId];
     }
 
-    if (!reportIds.length) {
-      return NextResponse.json({ error: "At least one report is required" }, { status: 400 });
+    if (reportIds.length !== 1) {
+      return NextResponse.json({ error: "Exactly one report must be selected" }, { status: 400 });
     }
 
-    const foundReports = await prisma.report.findMany({
-      where: { id: { in: reportIds } },
-      select: { id: true, title: true, description: true, status: true },
+    const selectedReport = await prisma.report.findUnique({
+      where: { id: reportIds[0] },
+      select: { id: true, status: true },
     });
 
-    const missingReports = reportIds.filter((id) => !foundReports.some((r) => r.id === id));
-    if (missingReports.length) {
-      return NextResponse.json({ error: "Some reports not found", missingReports }, { status: 404 });
+    if (!selectedReport) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }
 
-    const ineligible = foundReports.filter((r) => r.status !== REQUIRED_STATUS);
-    if (ineligible.length) {
+    if (selectedReport.status !== REQUIRED_STATUS) {
       return NextResponse.json(
-        {
-          error: `Drive can only be created for reports with status ${REQUIRED_STATUS}`,
-          ineligible: ineligible.map((r) => ({ id: r.id, status: r.status })),
-        },
+        { error: `Drive can only be created for reports with status ${REQUIRED_STATUS}` },
         { status: 400 }
       );
     }
@@ -97,13 +93,13 @@ export async function POST(request: NextRequest) {
     const participant = Number.isFinite(Number(body.participant)) ? Number(body.participant) : 0;
 
     // --- Tasks ---
-    const tasksData: Prisma.TaskCreateManyInput[] =
+    const tasksData: Prisma.TaskCreateWithoutDriveInput[] =
       body.taskBreakdown?.map((task) => ({
-        reportId: foundReports[0].id,
         engagement: task.engagement,
         title: task.title ?? "Task",
         description: task.description ?? "",
         status: "OPEN",
+        report: { connect: { id: selectedReport.id } }, // ✅ link each task to selected report
       })) ?? [];
 
     // --- Create Drive ---
@@ -115,11 +111,11 @@ export async function POST(request: NextRequest) {
         startDate,
         endDate,
         reports: {
-          create: foundReports.map((r) => ({
-            report: { connect: { id: r.id } },
-            title: r.title,
-            description: r.description,
-          })),
+          create: [
+            {
+              reportId: selectedReport.id, // ✅ obeys DriveReport schema
+            },
+          ],
         },
         tasks: { create: tasksData },
       },

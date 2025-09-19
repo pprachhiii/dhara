@@ -12,6 +12,7 @@ type AuthResponse = {
 // GET /api/tasks (public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
+  const reportId = url.searchParams.get("reportId");
   const statusParam = url.searchParams.get("status");
   const engagementParam = url.searchParams.get("engagement");
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const tasks = await prisma.task.findMany({
       where: {
+        reportId: reportId || undefined,
         ...(status ? { status } : {}),
         ...(engagement ? { engagement } : {}),
       },
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
       include: {
         report: true,
         drive: true,
-        volunteer: true,
+        volunteer: { include: { user: true } }, // include user for volunteer
       },
     });
 
@@ -64,6 +66,8 @@ export async function POST(req: NextRequest) {
         reportId: data.reportId,
         driveId: data.driveId ?? null,
         volunteerId: data.volunteerId ?? null,
+        title: data.title ?? "Untitled Task", // fallback
+        description: data.description ?? "No description",
         engagement: data.engagement as EngagementLevel,
         timeSlot: data.timeSlot ? new Date(data.timeSlot) : null,
         status: (data.status as TaskStatus) ?? TaskStatus.OPEN,
@@ -71,7 +75,7 @@ export async function POST(req: NextRequest) {
       include: {
         report: true,
         drive: true,
-        volunteer: true,
+        volunteer: { include: { user: true } },
       },
     });
 

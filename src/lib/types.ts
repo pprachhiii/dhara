@@ -274,3 +274,7 @@ export interface Vote {
 export interface ReportWithVotes extends Report {
   votes: Vote[];
 }
+
+export type DriveWithVotes = Drive & {
+  unifiedVotes: Vote[];
+};

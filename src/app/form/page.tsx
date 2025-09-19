@@ -5,18 +5,20 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import CreateForm from "@/components/CreateForm";
 
-type ModelType = "Task" | "Authority" ;
+type ModelType = "Task" | "Authority";
 
 function FormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryModel = (searchParams.get("model") as ModelType) || "Task";
   const queryId = searchParams.get("id"); 
+  const queryReportId = searchParams.get("reportId");
 
   const [model, setModel] = useState<ModelType>(queryModel);
   const [loading, setLoading] = useState(true);
   const [initialValues, setInitialValues] = useState<Record<string, unknown>>({});
 
+  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -38,11 +40,13 @@ function FormContent() {
     checkAuth();
   }, [router]);
 
+  // Update model if URL changes
   useEffect(() => {
     const urlModel = (searchParams.get("model") as ModelType) || "Task";
     setModel(urlModel);
   }, [searchParams]);
 
+  // Fetch initial data if editing
   useEffect(() => {
     if (!queryId) return;
 
@@ -67,13 +71,21 @@ function FormContent() {
     <div className="p-4">
       <CreateForm
         model={model}
-        initialValues={initialValues}
+        initialValues={{
+          ...initialValues,
+          // Pass reportId from URL if creating a new Task
+          reportId: queryReportId ?? (initialValues.reportId as string | undefined),
+        }}
         disableFields={[]}
         onSuccess={() => {
           toast.success(
             `${model} ${queryId ? "updated" : "created"} successfully!`
           );
-          router.push(`/${model.toLowerCase()}`);
+          if (model === "Task" && queryReportId) {
+            router.push(`/tasks?reportId=${queryReportId}`);
+          } else {
+            router.push(`/${model.toLowerCase()}`);
+          }
         }}
       />
     </div>

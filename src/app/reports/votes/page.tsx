@@ -16,9 +16,10 @@ const VotingReports = () => {
   const [showDiscussion, setShowDiscussion] = useState(false);
 
   useEffect(() => {
-    fetchReports();
+    fetchReports("ELIGIBLE_FOR_VOTE");
     fetchCurrentUser();
   }, [fetchReports, fetchCurrentUser]);
+
 
   const allReports = useMemo<ReportWithVotes[]>(
     () =>

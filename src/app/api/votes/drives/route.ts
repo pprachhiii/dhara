@@ -9,40 +9,65 @@ export async function POST(req: NextRequest) {
 
   try {
     const { driveId } = await req.json();
-
     if (!driveId) {
-      return NextResponse.json(
-        { error: "driveId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "driveId is required" }, { status: 400 });
     }
 
-    // Check for existing vote
+    // Check if already voted
     const existing = await prisma.vote.findFirst({
       where: { userId: auth.user.id, driveId },
     });
-
     if (existing) {
-      return NextResponse.json(
-        { error: "You have already voted on this drive" },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "You already voted for this drive" }, { status: 409 });
     }
 
-    // Create new vote
+    const drive = await prisma.drive.findUnique({ where: { id: driveId } });
+    if (!drive) {
+      return NextResponse.json({ error: "Drive not found" }, { status: 404 });
+    }
+
+    const now = new Date();
+
+    // If voting hasn't opened yet
+    if (!drive.votingOpenAt) {
+      await prisma.drive.update({
+        where: { id: driveId },
+        data: {
+          votingOpenAt: now,
+          votingCloseAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          status: "PLANNED", // still valid phase
+        },
+      });
+    }
+
+    // Prevent votes after close
+    if (drive.votingCloseAt && now > drive.votingCloseAt) {
+      return NextResponse.json({ error: "Voting for this drive has ended" }, { status: 403 });
+    }
+
+    // Create vote
     const vote = await prisma.vote.create({
       data: { userId: auth.user.id, driveId },
     });
+
+    // Count total votes
+    const voteCount = await prisma.vote.count({ where: { driveId } });
+    const VOTE_THRESHOLD = 5; // adjust threshold for drives
+
+    // If threshold met → update status
+    if (voteCount >= VOTE_THRESHOLD && drive.status !== "ONGOING") {
+      await prisma.drive.update({
+        where: { id: driveId },
+        data: { status: "ONGOING", finalVoteCount: voteCount },
+      });
+    }
 
     return NextResponse.json(
       { message: "Vote submitted successfully", vote },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Error creating drive vote:", error);
-    return NextResponse.json(
-      { error: "Failed to submit vote" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Failed to submit vote" }, { status: 500 });
   }
 }

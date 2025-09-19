@@ -14,7 +14,15 @@ export async function GET(request: NextRequest, context: Context) {
         reportAuthorities: { include: { authority: true } },
         drives: { include: { drive: true } },
         unifiedVotes: true,
-        tasks: true,
+        tasks: {
+          include: {
+            report: true,
+            drive: true,
+            volunteer: {
+              include: { user: true },
+            },
+          },
+        },
         monitorings: true,
       },
     });

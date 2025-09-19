@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { TaskStatus, EngagementLevel } from "@prisma/client";
+import { Plus } from "lucide-react";
 
 interface Task {
   id: string;
@@ -29,22 +30,33 @@ export default function TasksPage() {
   const reportId = searchParams.get("reportId");
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [reportTitle, setReportTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch tasks directly
   useEffect(() => {
     if (!reportId) return;
+
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`/api/reports/${reportId}/tasks`);
+        const res = await fetch(`/api/tasks?reportId=${reportId}`);
         if (!res.ok) throw new Error("Failed to fetch tasks");
         const data = await res.json();
-        setTasks(data.tasks || []);
+        setTasks(data);
+
+        // Optionally fetch report title separately
+        const resReport = await fetch(`/api/reports/${reportId}`);
+        if (resReport.ok) {
+          const reportData = await resReport.json();
+          setReportTitle(reportData.title);
+        }
       } catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTasks();
   }, [reportId]);
 
@@ -54,9 +66,16 @@ export default function TasksPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Tasks for Report {reportId}</h1>
-        <Button asChild>
-          <Link href={`/reports/${reportId}`}>⬅ Back to Report</Link>
+        <h1 className="text-2xl font-bold">
+          Tasks for Report: {reportTitle ?? reportId}
+        </h1>
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-md"
+          asChild
+        >
+          <Link href={`/form?model=Task&reportId=${reportId}`}>
+            <Plus className="h-4 w-4 mr-2" /> Add Task
+          </Link>
         </Button>
       </div>
 
@@ -89,8 +108,7 @@ export default function TasksPage() {
                 )}
                 {task.volunteer && (
                   <p>
-                    <strong>Assigned To:</strong>{" "}
-                    {task.volunteer.user.name ?? task.volunteer.user.email}
+                    <strong>Assigned To:</strong> {task.volunteer.user.name ?? task.volunteer.user.email}
                   </p>
                 )}
               </CardContent>

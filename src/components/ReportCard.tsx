@@ -133,16 +133,34 @@ export function ReportCard({
                   </Button>
                 );
 
-              case "VOTING_FINALIZED":
+              case "ELIGIBLE_FOR_DRIVE":
                 return (
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
-                    onClick={() => (window.location.href = "/drive/newDriveService")}
+                    onClick={() => (window.location.href = "/drives/new")}
                   >
                     Create Drive
                   </Button>
                 );
-
+                
+                case "VOTING_FINALIZED":
+                return (
+                  <Button
+                    className="bg-green-500 hover:bg-green-600 text-white shadow-md transition"
+                    onClick={() => (window.location.href = "/drives/new")}
+                  >
+                    Create Drive
+                  </Button>
+                );
+              case "DRIVE_FINALIZED":
+                return (
+                <Button
+                  className="bg-purple-500 hover:bg-purple-600 text-white shadow-md transition"
+                  onClick={() => (window.location.href = "/drives/votes")}
+                >
+                  Vote
+                </Button>
+              );
               case "IN_PROGRESS":
                 return (
                   <div className="flex gap-2">

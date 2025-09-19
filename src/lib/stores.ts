@@ -22,7 +22,7 @@ export interface ProposeDriveInput {
     id?: string;
     title: string;
     description: string;
-    comfort: EngagementLevel;
+    engagement: EngagementLevel;
     status?: TaskStatus;
     reportId: string;
   }[];
@@ -38,8 +38,7 @@ interface AppStore {
   setUser: (user: User | null) => void;
   setReports: (reports: Report[]) => void;
   setDrives: (drives: Drive[]) => void;
-
-  fetchReports: () => Promise<void>;
+  fetchReports: (status?: string) => Promise<void>;
   fetchDrives: () => Promise<void>;
   fetchCurrentUser: () => Promise<void>; // 💡 Added function to fetch user data
 
@@ -79,9 +78,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  fetchReports: async () => {
+  // src/lib/stores.ts
+  fetchReports: async (status?: string) => {
     try {
-      const res = await fetch("/api/reports?status=ELIGIBLE_FOR_VOTE");
+      const url = status ? `/api/reports?status=${status}` : "/api/reports";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch reports");
       const data: Report[] = await res.json();
       set({ reports: data });
@@ -239,7 +240,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         report: report ?? null,
         title: task.title,
         description: task.description,
-        engagement: task.comfort,
+        engagement: task.engagement,
         status: task.status ?? TaskStatus.OPEN,
         createdAt: new Date(),
         updatedAt: new Date(),
