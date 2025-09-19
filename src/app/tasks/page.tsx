@@ -98,7 +98,8 @@ export default function TasksPage() {
                 </p>
                 {task.timeSlot && (
                   <p>
-                    <strong>Time:</strong> {new Date(task.timeSlot).toLocaleString()}
+                    <strong>Time:</strong>{" "}
+                    {new Date(task.timeSlot).toLocaleString()}
                   </p>
                 )}
                 {task.drive && (
@@ -108,7 +109,8 @@ export default function TasksPage() {
                 )}
                 {task.volunteer && (
                   <p>
-                    <strong>Assigned To:</strong> {task.volunteer.user.name ?? task.volunteer.user.email}
+                    <strong>Assigned To:</strong>{" "}
+                    {task.volunteer.user.name ?? task.volunteer.user.email}
                   </p>
                 )}
               </CardContent>
