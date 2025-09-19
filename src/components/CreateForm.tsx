@@ -106,8 +106,17 @@ export default function CreateForm<T extends FormState>({
   onSuccess,
 }: CreateFormProps<T>) {
   const router = useRouter();
-  const [form, dispatch] = useReducer(formReducer<T>, { ...initialValues });
-  const prevInitialValues = useRef<Partial<T>>({ ...initialValues });
+  
+  // Initialize title/description as empty strings if undefined
+  const defaultValues: Partial<T> = {
+    ...(model === "Task"
+      ? { title: "", description: "" }
+      : {}),
+    ...initialValues,
+  };
+
+  const [form, dispatch] = useReducer(formReducer<T>, { ...defaultValues });
+  const prevInitialValues = useRef<Partial<T>>({ ...defaultValues });
 
   const [cityQuery, setCityQuery] = useState("");
   const [cityResults, setCityResults] = useState<NominatimResult[]>([]);
@@ -116,10 +125,16 @@ export default function CreateForm<T extends FormState>({
 
   useEffect(() => {
     if (!isEqual(prevInitialValues.current, initialValues)) {
-      dispatch({ type: "SET", payload: initialValues });
-      prevInitialValues.current = initialValues;
+      const updatedDefaults: Partial<T> = {
+        ...(model === "Task"
+          ? { title: "", description: "" }
+          : {}),
+        ...initialValues,
+      };
+      dispatch({ type: "SET", payload: updatedDefaults });
+      prevInitialValues.current = updatedDefaults;
     }
-  }, [initialValues]);
+  }, [initialValues, model]);
 
   // City autocomplete for Authority
   useEffect(() => {
@@ -218,7 +233,8 @@ export default function CreateForm<T extends FormState>({
       if (key === "active") submitData[key] = value === "true" || value === true;
       else if (key === "timeSlot" && value)
         submitData[key] = new Date(value as string);
-      else submitData[key] = value as string | boolean | Date | undefined;
+      else
+        submitData[key] = value !== undefined ? value : ""; // <-- FIX: prevent Prisma default fallback
     });
 
     try {
@@ -238,7 +254,6 @@ export default function CreateForm<T extends FormState>({
       onClose?.();
 
       if (!isEdit) {
-        // Narrow to TaskForm to safely access reportId
         if (model === "Task" && (form as Partial<TaskForm>).reportId) {
           router.push(`/tasks?reportId=${(form as Partial<TaskForm>).reportId}`);
         } else {
