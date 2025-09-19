@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/serverAuth";
-
-// Helper type for GET context
-interface RouteContext {
-  params: Promise<{ id: string }>;
-}
+import { Context } from "@/lib/context";
 
 // POST /api/volunteer
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth.error || !auth.user) return auth.response!;
 
@@ -16,6 +12,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { reportId, driveId }: { reportId?: string; driveId?: string } = await req.json();
     const userId = auth.user.id;
 
+    // Ensure volunteer exists
     let volunteer = await prisma.volunteer.findUnique({ where: { userId } });
     if (!volunteer) {
       volunteer = await prisma.volunteer.create({ data: { userId } });
@@ -25,6 +22,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
+    // Handle drive linking
     let finalReportId = reportId;
     if (driveId) {
       const drive = await prisma.drive.findUnique({
@@ -42,6 +40,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         create: { driveId, volunteerId: volunteer.id },
       });
 
+      // Assign report from drive if none provided
       finalReportId = drive.reports[0]?.reportId ?? null;
     }
 
@@ -56,16 +55,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 }
 
-// GET /api/volunteer?id=...
-export const GET = async (
-  req: NextRequest,
-  context: RouteContext
-): Promise<NextResponse> => {
+// GET /api/volunteer/:id
+export async function GET(req: NextRequest, context: Context) {
   const auth = await requireAuth(req);
   if (auth.error || !auth.user) return auth.response!;
 
   try {
-    const { id } = await context.params; // keep await
+    const { id } = await context.params;
 
     const report = await prisma.report.findUnique({
       where: { id },
@@ -88,4 +84,4 @@ export const GET = async (
     console.error("GET /api/volunteer error:", err);
     return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
   }
-};
+}
