@@ -1,19 +1,24 @@
 // app/page.tsx
-import HomePageClient from "@/components/HomePageClient";
-import { prisma } from "@/lib/prisma";
+import { HeroSection } from "@/components/home/hero-section"
+import { StatsSection } from "@/components/home/stats-section"
+import { HowItWorksSection } from "@/components/home/how-it-works"
+import { FeaturedReports } from "@/components/home/featured-reports"
+import { UpcomingDrives } from "@/components/home/upcoming-drives"
+import { EnergyAwareCTA } from "@/components/home/energy-cta"
+import { ImpactSection } from "@/components/home/impact-section"
+import { Footer } from "@/components/layout/footer"
 
-export default async function HomePage() {
-  const [reports, drives, volunteers] = await Promise.all([
-    prisma.report.findMany({ include: { reporter: true } }),
-    prisma.drive.findMany(),
-    prisma.volunteer.findMany({ include: { user: true } }),
-  ]);
-
+export default function HomePage() {
   return (
-    <HomePageClient
-      initialReports={reports}
-      initialDrives={drives}
-      initialVolunteers={volunteers}
-    />
-  );
+    <main className="w-full">
+      <HeroSection />
+      <StatsSection />
+      <HowItWorksSection />
+      <FeaturedReports />
+      <UpcomingDrives />
+      <EnergyAwareCTA />
+      <ImpactSection />
+      <Footer />
+    </main>
+  )
 }

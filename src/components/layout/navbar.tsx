@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Home, Users, FileText } from "lucide-react";
+import { Users, FileText, BarChart3 } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -35,9 +35,10 @@ export default function Navbar() {
   };
 
   const navItems = [
-    { href: "/", label: "Home", icon: Home },
     { href: "/reports", label: "Reports", icon: FileText },
     { href: "/drives", label: "Drives", icon: Users},
+    { href: "/voting", label: "Voting Hub", icon: BarChart3 },
+
   ];
 
   return (
@@ -77,11 +78,8 @@ export default function Navbar() {
           <div className="hidden md:flex gap-2 items-center">
             {!isLoggedIn ? (
               <>
-                <Button asChild variant="outline">
+                <Button asChild className="bg-yellow-500 hover:bg-yellow-600 hover:scale-105">
                   <Link href="/auth/login">Login</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/auth/register">Signup</Link>
                 </Button>
               </>
             ) : (
