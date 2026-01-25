@@ -1,6 +1,5 @@
-// components/home/featured-reports.tsx
 import { prisma } from "@/lib/prisma"
-import { ReportCard } from "@/components/ReportCard"
+import { ReportCard } from "@/components/reports/ReportCard"
 import type { Report } from "@/lib/types"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"

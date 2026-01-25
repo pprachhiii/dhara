@@ -23,6 +23,9 @@ export async function ImpactSection() {
         <div className="mt-2 text-lg font-medium">
           Issues Resolved
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Issues resolved successfully
+        </p>
       </div>
 
       <div>
@@ -33,6 +36,9 @@ export async function ImpactSection() {
         <div className="mt-2 text-lg font-medium">
           Trees Planted
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          As part of drive activities
+        </p>
       </div>
 
       <div>
@@ -42,6 +48,9 @@ export async function ImpactSection() {
         <div className="mt-2 text-lg font-medium">
           Resolution Rate
         </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Issues resolved successfully
+        </p>
       </div>
     </div>
     </section>

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ReportCard } from "@/components/ReportCard";
+import { ReportCard } from "@/components/reports/ReportCard";
 import { useAppStore } from "@/lib/stores";
 import { Plus, Search, Filter } from "lucide-react";
 import Link from "next/link";
@@ -217,7 +217,7 @@ export default function Reports() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Community Reports Hub</h1>
+          <h1 className="text-3xl font-bold text-foreground">Browse Reports</h1>
           <p className="text-muted-foreground">
             Organized hubs based on report lifecycle stages for clear tracking and action.
           </p>
@@ -227,7 +227,7 @@ export default function Reports() {
           asChild
         >
           <Link href="/reports/new">
-            <Plus className="h-4 w-4 mr-2" /> Submit Report
+            <Plus className="h-4 w-4 mr-2" /> Report Issue
           </Link>
         </Button>
       </div>
@@ -237,7 +237,7 @@ export default function Reports() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search reports..."
+            placeholder="Search reports by title, description, or status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"

@@ -1,4 +1,3 @@
-// components/home/upcoming-drives.tsx
 import { prisma } from "@/lib/prisma"
 import { DriveCard } from "@/components/DriveCard"
 import Link from "next/link"

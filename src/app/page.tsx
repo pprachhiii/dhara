@@ -1,4 +1,5 @@
-// app/page.tsx
+export const dynamic = "force-dynamic"
+
 import { HeroSection } from "@/components/home/hero-section"
 import { StatsSection } from "@/components/home/stats-section"
 import { HowItWorksSection } from "@/components/home/how-it-works"
@@ -7,6 +8,8 @@ import { UpcomingDrives } from "@/components/home/upcoming-drives"
 import { EnergyAwareCTA } from "@/components/home/energy-cta"
 import { ImpactSection } from "@/components/home/impact-section"
 import { Footer } from "@/components/layout/footer"
+import { FinalCTA } from "@/components/home/final-cta"
+
 
 export default function HomePage() {
   return (
@@ -18,6 +21,7 @@ export default function HomePage() {
       <UpcomingDrives />
       <EnergyAwareCTA />
       <ImpactSection />
+      <FinalCTA/>
       <Footer />
     </main>
   )

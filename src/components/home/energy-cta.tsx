@@ -42,7 +42,7 @@ export function EnergyAwareCTA() {
           </div>
 
           <div className="mt-8">
-            <Link href="/register">
+            <Link href="/auth/register">
               <Button size="lg" variant="secondary" className="gap-2">
                 Join the Community
                 <ArrowRight className="h-5 w-5" />

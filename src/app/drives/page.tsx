@@ -237,7 +237,7 @@ export default function Drives() {
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="all">Filters</SelectItem>
             {Object.values(DriveStatus).map((status) => (
               <SelectItem key={status} value={status}>
                 {status}
