@@ -3,3 +3,4 @@ interface ParamBase<T extends Record<string, string>> {
 }
 
 export type Context = ParamBase<{ id: string }>;
+export type EmptyContext = ParamBase<Record<string, never>>;

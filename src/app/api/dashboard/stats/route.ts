@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromPage } from '@/lib/pageAuth';
-import { Context } from '@/lib/context';
+import { EmptyContext } from '@/lib/context';
 
-export async function POST(request: NextRequest, context: Context) {
+export async function POST(request: NextRequest, context: EmptyContext) {
   const user = await getUserFromPage();
   const { id } = await context.params;
 
