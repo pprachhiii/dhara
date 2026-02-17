@@ -77,7 +77,11 @@ export default function DriveSidebarClient({
   drive: DriveSidebarDrive;
   volunteers: DriveVolunteerItem[];
   alreadyVolunteer: boolean;
-  onJoin: (data: { timeSlot: string; preferredTaskId: string; notes: string }) => Promise<JoinDriveResponse>;
+  onJoin: (data: {
+    timeSlot: string;
+    preferredTaskId: string;
+    notes: string;
+  }) => Promise<JoinDriveResponse>;
 }) {
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -156,10 +160,10 @@ export default function DriveSidebarClient({
                     </SelectTrigger>
                     <SelectContent>
                       {drive.timeSlots?.map((slot: DriveTimeSlot) => (
-  <SelectItem key={slot.id} value={slot.id}>
-    {slot.label} ({slot.available} spots)
-  </SelectItem>
-))}
+                        <SelectItem key={slot.id} value={slot.id}>
+                          {slot.label} ({slot.available} spots)
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -173,10 +177,10 @@ export default function DriveSidebarClient({
                     </SelectTrigger>
                     <SelectContent>
                       {drive.tasks?.map((task: DriveTask) => (
-  <SelectItem key={task.id} value={task.id}>
-    {task.title}
-  </SelectItem>
-))}
+                        <SelectItem key={task.id} value={task.id}>
+                          {task.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

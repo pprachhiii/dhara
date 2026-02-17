@@ -17,7 +17,6 @@ type ReportUpdateData = Partial<{
   pinCode: string | null;
 }>;
 
-
 // GET /api/reports/:id (public)
 export async function GET(request: NextRequest, context: Context) {
   try {
@@ -80,7 +79,7 @@ export async function PATCH(request: NextRequest, context: Context) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-const updateData: ReportUpdateData = {};
+    const updateData: ReportUpdateData = {};
 
     if (typeof data.title === 'string') {
       updateData.title = data.title.trim();
