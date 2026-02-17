@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DHARA Design System - Environmental Stewardship Platform */
+/* Dhara Design System - Environmental Stewardship Platform */
 
 @layer base {
   :root {
@@ -42,9 +42,17 @@
     --input: 30 15% 88%;
     --ring: 155 55% 25%;
 
-    --gradient-forest: linear-gradient(135deg, hsl(155 55% 25%), hsl(155 60% 35%));
+    --gradient-forest: linear-gradient(
+      135deg,
+      hsl(155 55% 25%),
+      hsl(155 60% 35%)
+    );
     --gradient-earth: linear-gradient(135deg, hsl(30 40% 80%), hsl(45 50% 85%));
-    --gradient-hero: linear-gradient(135deg, hsl(155 55% 25%), hsl(120 60% 50%));
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(155 55% 25%),
+      hsl(120 60% 50%)
+    );
 
     --shadow-gentle: 0 2px 8px hsl(155 25% 15% / 0.1);
     --shadow-elevated: 0 4px 16px hsl(155 25% 15% / 0.15);
@@ -90,9 +98,17 @@
     --input: 155 15% 20%;
     --ring: 155 45% 35%;
 
-    --gradient-forest: linear-gradient(135deg, hsl(155 45% 35%), hsl(155 50% 45%));
+    --gradient-forest: linear-gradient(
+      135deg,
+      hsl(155 45% 35%),
+      hsl(155 50% 45%)
+    );
     --gradient-earth: linear-gradient(135deg, hsl(30 30% 25%), hsl(45 40% 30%));
-    --gradient-hero: linear-gradient(135deg, hsl(155 45% 35%), hsl(120 50% 45%));
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(155 45% 35%),
+      hsl(120 50% 45%)
+    );
   }
 }
 
@@ -107,49 +123,111 @@
 
 @layer components {
   /* Gradients */
-  .hero-gradient { background: var(--gradient-hero); }
-  .forest-gradient { background: var(--gradient-forest); }
-  .earth-gradient { background: var(--gradient-earth); }
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+  .forest-gradient {
+    background: var(--gradient-forest);
+  }
+  .earth-gradient {
+    background: var(--gradient-earth);
+  }
 
   /* Shadows */
-  .shadow-gentle { box-shadow: var(--shadow-gentle); }
-  .shadow-elevated { box-shadow: var(--shadow-elevated); }
-  .shadow-accent { box-shadow: var(--shadow-accent); }
+  .shadow-gentle {
+    box-shadow: var(--shadow-gentle);
+  }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  .shadow-accent {
+    box-shadow: var(--shadow-accent);
+  }
 
   /* Transitions */
-  .transition-smooth { transition: var(--transition-smooth); }
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
 
   /* Phase badges */
-  .phase-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
-  .phase-pending { @apply phase-badge bg-warning text-warning-foreground; }
-  .phase-voting { @apply phase-badge bg-accent text-accent-foreground; }
-  .phase-progress { @apply phase-badge bg-primary text-primary-foreground; }
-  .phase-completed { @apply phase-badge bg-success text-success-foreground; }
+  .phase-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .phase-pending {
+    @apply phase-badge bg-warning text-warning-foreground;
+  }
+  .phase-voting {
+    @apply phase-badge bg-accent text-accent-foreground;
+  }
+  .phase-progress {
+    @apply phase-badge bg-primary text-primary-foreground;
+  }
+  .phase-completed {
+    @apply phase-badge bg-success text-success-foreground;
+  }
 
   /* Animations */
-  .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-  .animate-slide-up { animation: slideUp 0.6s ease-out; }
-  .animate-pulse-gentle { animation: pulseGentle 2s ease-in-out infinite; }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+  .animate-pulse-gentle {
+    animation: pulseGentle 2s ease-in-out infinite;
+  }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   @keyframes pulseGentle {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 
   /* Staggered animations for card grids */
-  .stagger-children > * { animation: fadeIn 0.5s ease-out; animation-fill-mode: both; }
-  .stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
-  .stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
-  .stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
-  .stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
-  .stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
-  .stagger-children > *:nth-child(6) { animation-delay: 0.6s; }
+  .stagger-children > * {
+    animation: fadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+  }
+  .stagger-children > *:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .stagger-children > *:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .stagger-children > *:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .stagger-children > *:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  .stagger-children > *:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+  .stagger-children > *:nth-child(6) {
+    animation-delay: 0.6s;
+  }
 }

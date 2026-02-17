@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import DriveForm from "@/components/DriveForm";
+import { Suspense } from 'react';
+import DriveForm from '@/components/drives/drive-form';
 
 export default function NewdrivePage() {
   return (

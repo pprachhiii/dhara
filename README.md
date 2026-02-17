@@ -1,8 +1,8 @@
-# **DHARA**
+# **Dhara**
 
 **Community-driven platform for environmental stewardship and civic responsibility in India**
 
-DHARA empowers citizens of all ages—students, professionals, homemakers, children, and the elderly—to actively participate in cleaning, beautifying, and maintaining neighborhoods. Participation is flexible and aligned with people’s availability, comfort, and mental well-being.
+Dhara empowers citizens of all ages-students, professionals, homemakers, children, and the elderly-to actively participate in cleaning, beautifying, and maintaining neighborhoods. Participation is flexible and aligned with people’s availability, comfort, and mental well-being.
 
 The platform integrates **reporting neglected areas**, **authority contact tracking**, **centralized community voting**, **volunteer-driven drives**, and **monitoring & beautification** into a practical, inclusive, and accountable civic movement.
 
@@ -31,8 +31,7 @@ The platform integrates **reporting neglected areas**, **authority contact track
 
 - Volunteers log contacts: **Contact Official** / **Already Contacted**.
 - 7-day wait post-contact:
-
-  - ✅ **Resolved by authority** → **UNDER_MONITORING**.
+  - ✅ **Ready for Monitor** → **UNDER_MONITORING**.
   - ❌ **No action** → **ELIGIBLE_VOTE** (community voting).
 
 ### 3. Centralized Report Voting Hub
@@ -61,7 +60,6 @@ The platform integrates **reporting neglected areas**, **authority contact track
 - Post-drive: murals, signage, tree guards.
 - Volunteers can reference **Google, Pinterest, YouTube**.
 - Monitoring lasts \~1 month:
-
   - ✅ If sustained → **RESOLVED**.
   - ❌ If dirty → cycle restarts at **PENDING**.
 

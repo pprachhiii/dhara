@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { ContactStatus } from "@prisma/client";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { ContactStatus } from '@prisma/client';
 
 // GET /api/reportAuthorities → PUBLIC
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const reportId = url.searchParams.get("reportId");
-    const authorityId = url.searchParams.get("authorityId");
-    const statusParam = url.searchParams.get("status");
+    const reportId = url.searchParams.get('reportId');
+    const authorityId = url.searchParams.get('authorityId');
+    const statusParam = url.searchParams.get('status');
 
     const status =
       statusParam && Object.values(ContactStatus).includes(statusParam as ContactStatus)
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         ...(authorityId ? { authorityId } : {}),
         ...(status ? { status } : {}),
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
         report: true,
         authority: true,
@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(records);
   } catch (err) {
-    console.error("Error fetching report-authority records:", err);
+    console.error('Error fetching report-authority records:', err);
     return NextResponse.json(
-      { error: "Failed to fetch report-authority records" },
-      { status: 500 }
+      { error: 'Failed to fetch report-authority records' },
+      { status: 500 },
     );
   }
 }

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { ReportStatus } from "@prisma/client";
-import { subDays } from "date-fns";
-import { requireAuth } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { ReportStatus } from '@prisma/client';
+import { subDays } from 'date-fns';
+import { requireAuth } from '@/lib/serverAuth';
 
 type AuthResponse = {
   error: boolean;
@@ -13,8 +13,8 @@ type AuthResponse = {
 // GET /api/reports (public)
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const statusParam = url.searchParams.get("status");
-  const search = url.searchParams.get("search");
+  const statusParam = url.searchParams.get('status');
+  const search = url.searchParams.get('search');
 
   const status =
     statusParam && Object.values(ReportStatus).includes(statusParam as ReportStatus)
@@ -27,13 +27,13 @@ export async function GET(request: NextRequest) {
       ...(search
         ? {
             OR: [
-              { title: { contains: search, mode: "insensitive" } },
-              { description: { contains: search, mode: "insensitive" } },
+              { title: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
             ],
           }
         : {}),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     include: {
       reportAuthorities: { include: { authority: true } },
       drives: { include: { drive: true } },
@@ -46,23 +46,27 @@ export async function GET(request: NextRequest) {
   const sevenDaysAgo = subDays(new Date(), 7);
 
   const enrichedReports = reports.map((report) => {
-    let escalationType: "CONTACT_AUTHORITY" | "CREATE_DRIVE" | null = null;
+    const hasDrive = report.drives.length > 0;
 
-    if (
-      report.status === ReportStatus.PENDING
-    ) {
-      escalationType = "CONTACT_AUTHORITY";
+    let finalStatus = report.status;
+
+    if (hasDrive && report.status === ReportStatus.ELIGIBLE_FOR_DRIVE) {
+      finalStatus = ReportStatus.IN_PROGRESS;
     }
 
-    if (
-      report.status === ReportStatus.AUTHORITY_CONTACTED &&
-      report.updatedAt <= sevenDaysAgo
-    ) {
-      escalationType = "CREATE_DRIVE";
+    let escalationType: 'CONTACT_AUTHORITY' | 'CREATE_DRIVE' | null = null;
+
+    if (finalStatus === ReportStatus.PENDING) {
+      escalationType = 'CONTACT_AUTHORITY';
+    }
+
+    if (finalStatus === ReportStatus.AUTHORITY_CONTACTED && report.updatedAt <= sevenDaysAgo) {
+      escalationType = 'CREATE_DRIVE';
     }
 
     return {
       ...report,
+      status: finalStatus,
       escalationType,
       voteCount: report._count.unifiedVotes,
     };
@@ -78,13 +82,10 @@ export async function POST(request: NextRequest) {
 
   const data = await request.json();
 
-  const requiredFields = ["title", "description", "city", "country", "pinCode"];
+  const requiredFields = ['title', 'description', 'city', 'country', 'pinCode'];
   for (const field of requiredFields) {
     if (!data[field]) {
-      return NextResponse.json(
-        { error: `${field} is required` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `${field} is required` }, { status: 400 });
     }
   }
 

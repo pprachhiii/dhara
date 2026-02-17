@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import ImageKit from "imagekit";
-import { requireAuth } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from 'next/server';
+import ImageKit from 'imagekit';
+import { requireAuth } from '@/lib/serverAuth';
 
-export const runtime = "nodejs"; // Node runtime needed for Buffer
+export const runtime = 'nodejs';
 
 interface ImageKitUploadResult {
   fileId: string;
@@ -28,63 +28,63 @@ const imagekit = new ImageKit({
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== Upload API called ===");
+    console.log('=== Upload API called ===');
 
     // --- Auth check ---
     const authResult = await requireAuth(req);
     if (authResult.error || !authResult.user) {
-      console.warn("Unauthorized upload attempt");
+      console.warn('Unauthorized upload attempt');
       return authResult.response!;
     }
-    console.log("Authenticated user:", authResult.user.email);
+    console.log('Authenticated user:', authResult.user.email);
 
     // --- Parse file ---
     const formData = await req.formData();
-    const rawFile = formData.get("file");
+    const rawFile = formData.get('file');
 
     // Node-compatible type guard
-    const file = rawFile instanceof Blob && "arrayBuffer" in rawFile ? (rawFile as FileLike) : null;
+    const file = rawFile instanceof Blob && 'arrayBuffer' in rawFile ? (rawFile as FileLike) : null;
 
     if (!file) {
-      console.log("No valid file received in formData");
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      console.log('No valid file received in formData');
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileName = file.name || `upload-${Date.now()}`;
 
-    console.log("Received file:", fileName, "size:", buffer.length);
+    console.log('Received file:', fileName, 'size:', buffer.length);
 
     // --- Upload to ImageKit ---
     const upload: ImageKitUploadResult = await new Promise((resolve, reject) => {
       imagekit.upload(
         {
-          file: buffer.toString("base64"),
+          file: buffer.toString('base64'),
           fileName,
           useBase64: true,
           useUniqueFileName: true,
-          folder: "/uploads",
+          folder: '/uploads',
         },
         (err, result) => {
           if (err) {
-            console.error("ImageKit upload error:", err);
+            console.error('ImageKit upload error:', err);
             return reject(err);
           }
           if (!result || !result.url) {
-            console.error("Invalid result from ImageKit:", result);
-            return reject(new Error("Invalid result from ImageKit"));
+            console.error('Invalid result from ImageKit:', result);
+            return reject(new Error('Invalid result from ImageKit'));
           }
           resolve(result as ImageKitUploadResult);
-        }
+        },
       );
     });
 
-    console.log("Upload successful:", upload.url);
+    console.log('Upload successful:', upload.url);
     return NextResponse.json({ url: upload.url });
   } catch (error) {
-    console.error("Upload failed:", error);
-    const message = error instanceof Error ? error.message : "unknown";
-    return NextResponse.json({ error: "Upload failed", details: message }, { status: 500 });
+    console.error('Upload failed:', error);
+    const message = error instanceof Error ? error.message : 'unknown';
+    return NextResponse.json({ error: 'Upload failed', details: message }, { status: 500 });
   }
 }

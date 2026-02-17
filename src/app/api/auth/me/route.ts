@@ -1,23 +1,31 @@
-import { NextResponse } from "next/server";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request) {
   try {
-    const cookieHeader = req.headers.get("cookie") || "";
-    const token = cookieHeader.split(";").map(c => c.trim()).find(c => c.startsWith("token="))?.split("=")[1];
+    const cookieHeader = req.headers.get('cookie') || '';
+    const token = cookieHeader
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('token='))
+      ?.split('=')[1];
 
     if (!token) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     if (!process.env.JWT_SECRET) {
-      return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload & { sub?: string; email?: string; role?: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload & {
+      sub?: string;
+      email?: string;
+      role?: string;
+    };
     if (!decoded.sub && !decoded.email) {
-      return NextResponse.json({ error: "Token missing user info" }, { status: 401 });
+      return NextResponse.json({ error: 'Token missing user info' }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -26,12 +34,22 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name || null, role: user.role } }, { status: 200 });
+    return NextResponse.json(
+      {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name || null,
+          role: user.role,
+        },
+      },
+      { status: 200 },
+    );
   } catch (err) {
-    console.error("[AUTH_ME] Error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error('[AUTH_ME] Error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { MonitoringStatus } from "@prisma/client";
-import { requireAuth } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { MonitoringStatus } from '@prisma/client';
+import { requireAuth } from '@/lib/serverAuth';
 
 // ---------------- PUBLIC ----------------
 // GET /api/monitoring → list all monitorings
 export async function GET() {
   try {
     const monitorings = await prisma.monitoring.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
         drive: true,
         report: true,
@@ -17,7 +17,7 @@ export async function GET() {
 
     return NextResponse.json(monitorings);
   } catch {
-    return NextResponse.json({ error: "Failed to fetch monitorings" }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch monitorings' }, { status: 500 });
   }
 }
 
@@ -28,10 +28,10 @@ export async function POST(req: NextRequest) {
   if (auth.error || !auth.user) return auth.response!;
 
   try {
-    const { driveId, reportId, checkDate, notes } = await req.json();
+    const { driveId, reportId, checkDate, volunteerId, notes } = await req.json();
 
     if (!checkDate) {
-      return NextResponse.json({ error: "checkDate is required" }, { status: 400 });
+      return NextResponse.json({ error: 'checkDate is required' }, { status: 400 });
     }
 
     const monitoring = await prisma.monitoring.create({
@@ -41,12 +41,20 @@ export async function POST(req: NextRequest) {
         status: MonitoringStatus.ACTIVE,
         checkDate: new Date(checkDate),
         notes: notes || null,
+        volunteerId: volunteerId || undefined,
       },
     });
+    // Update report status
+    await prisma.report.update({
+      where: { id: reportId },
+      data: { status: 'UNDER_MONITORING' },
+    });
 
-    return NextResponse.json({ message: "Monitoring started successfully", monitoring }, { status: 201 });
+    return NextResponse.json(
+      { message: 'Monitoring started successfully', monitoring },
+      { status: 201 },
+    );
   } catch {
-    return NextResponse.json({ error: "Failed to start monitoring" }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to start monitoring' }, { status: 500 });
   }
 }
-

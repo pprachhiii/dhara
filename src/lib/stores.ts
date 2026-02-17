@@ -1,6 +1,5 @@
-// src/lib/stores.ts
-import { create } from "zustand";
-import {
+import { create } from 'zustand';
+import type {
   User,
   Drive,
   Task,
@@ -11,7 +10,7 @@ import {
   DriveStatus,
   EngagementLevel,
   Vote,
-} from "@/lib/types";
+} from '@/lib/types';
 
 export interface ProposeDriveInput {
   title: string;
@@ -33,14 +32,13 @@ interface AppStore {
   currentUser: User | null;
   reports: Report[];
   drives: Drive[];
-  userLoading: boolean; // 💡 Added state to track user loading status
-
+  userLoading: boolean;
   setUser: (user: User | null) => void;
   setReports: (reports: Report[]) => void;
   setDrives: (drives: Drive[]) => void;
   fetchReports: (status?: string) => Promise<void>;
   fetchDrives: () => Promise<void>;
-  fetchCurrentUser: () => Promise<void>; // 💡 Added function to fetch user data
+  fetchCurrentUser: () => Promise<void>;
 
   voteOnReport: (reportId: string) => void;
   contactAuthority: (reportId: string, authorityId: string) => void;
@@ -57,7 +55,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   currentUser: null,
   reports: [],
   drives: [],
-  userLoading: true, // 💡 Initial state is loading
+  userLoading: true,
 
   setUser: (user) => set({ currentUser: user }),
   setReports: (reports) => set({ reports }),
@@ -65,7 +63,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   fetchCurrentUser: async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetch('/api/auth/me');
       if (res.ok) {
         const user = await res.json();
         set({ currentUser: user, userLoading: false });
@@ -73,32 +71,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
         set({ currentUser: null, userLoading: false });
       }
     } catch (err) {
-      console.error("Error fetching user:", err);
+      console.error('Error fetching user:', err);
       set({ currentUser: null, userLoading: false });
     }
   },
 
-  // src/lib/stores.ts
   fetchReports: async (status?: string) => {
     try {
-      const url = status ? `/api/reports?status=${status}` : "/api/reports";
+      const url = status ? `/api/reports?status=${status}` : '/api/reports';
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch reports");
+      if (!res.ok) throw new Error('Failed to fetch reports');
       const data: Report[] = await res.json();
       set({ reports: data });
     } catch (err) {
-      console.error("Error fetching reports:", err);
+      console.error('Error fetching reports:', err);
     }
   },
 
   fetchDrives: async () => {
     try {
-      const res = await fetch("/api/drives");
-      if (!res.ok) throw new Error("Failed to fetch drives");
+      const res = await fetch('/api/drives');
+      if (!res.ok) throw new Error('Failed to fetch drives');
       const data: Drive[] = await res.json();
       set({ drives: data });
     } catch (err) {
-      console.error("Error fetching drives:", err);
+      console.error('Error fetching drives:', err);
     }
   },
 
@@ -109,9 +106,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const targetReport = reports.find((r) => r.id === reportId);
     if (!targetReport) return;
 
-    const alreadyVoted = targetReport.unifiedVotes?.some(
-      (v) => v.userId === currentUser.id
-    );
+    const alreadyVoted = targetReport.unifiedVotes?.some((v) => v.userId === currentUser.id);
     if (alreadyVoted) return;
 
     const vote: Vote = {
@@ -130,7 +125,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             unifiedVotes: [...(r.unifiedVotes ?? []), vote],
             finalVoteCount: (r.finalVoteCount ?? 0) + 1,
           }
-        : r
+        : r,
     );
 
     set({ reports: updatedReports });
@@ -149,14 +144,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
                   id: crypto.randomUUID(),
                   reportId,
                   authorityId,
-                  status: "CONTACTED",
+                  status: 'CONTACTED',
                   createdAt: new Date(),
                   updatedAt: new Date(),
                   volunteerId: null,
                 } as ReportAuthority,
               ],
             }
-          : r
+          : r,
       ),
     });
   },
@@ -168,9 +163,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const targetDrive = drives.find((d) => d.id === driveId);
     if (!targetDrive) return;
 
-    const alreadyVoted = targetDrive.unifiedVotes?.some(
-      (v) => v.userId === currentUser.id
-    );
+    const alreadyVoted = targetDrive.unifiedVotes?.some((v) => v.userId === currentUser.id);
     if (alreadyVoted) return;
 
     const vote: Vote = {
@@ -189,7 +182,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
             unifiedVotes: [...(d.unifiedVotes ?? []), vote],
             finalVoteCount: (d.finalVoteCount ?? 0) + 1,
           }
-        : d
+        : d,
     );
 
     set({ drives: updatedDrives });
@@ -208,21 +201,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
                   id: crypto.randomUUID(),
                   driveId,
                   volunteerId: userId,
-                  status: TaskStatus.ASSIGNED,
-                  engagement: EngagementLevel.GROUP,
+                  status: 'ASSIGNED',
+                  engagement: 'GROUP',
+                  volunteersNeeded: 1,
                   createdAt: new Date(),
                   updatedAt: new Date(),
-                  title: "Assigned Task",
-                  description: "Task assigned to volunteer",
+                  title: 'Assigned Task',
+                  description: 'Task assigned to volunteer',
                   reportId: null,
                   report: null,
                   drive: d,
                   volunteer: null,
-                  timeSlot: null,
                 },
               ],
             }
-          : d
+          : d,
       ),
     });
   },
@@ -233,6 +226,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const tasks: Task[] = input.taskBreakdown.map((task, i) => {
       const report = reports.find((r) => r.id === task.reportId);
+
       return {
         id: task.id ?? `task-${Date.now()}-${i}`,
         driveId,
@@ -241,12 +235,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         title: task.title,
         description: task.description,
         engagement: task.engagement,
-        status: task.status ?? TaskStatus.OPEN,
+        volunteersNeeded: 1,
+        status: task.status ?? 'OPEN',
         createdAt: new Date(),
         updatedAt: new Date(),
         volunteerId: null,
         volunteer: null,
-        timeSlot: null,
         drive: null,
       };
     });
@@ -259,8 +253,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         reportId,
         drive: {} as Drive,
         report: report ?? ({} as Report),
-        title: report?.title ?? "",
-        description: report?.description ?? "",
+        title: report?.title ?? '',
+        description: report?.description ?? '',
       };
     });
 
@@ -268,12 +262,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
       id: driveId,
       title: input.title,
       description: input.description,
+
+      category: 'CLEANUP',
       participant: 0,
+      durationHr: 2,
+      startTime: '09:00',
+      area: 'Unknown',
+      city: 'Unknown',
+
       startDate: input.startDate,
       endDate: undefined,
       status: input.status,
+
       createdAt: new Date(),
       updatedAt: new Date(),
+
       reports: driveReports,
       unifiedVotes: [],
       tasks,
@@ -281,6 +284,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       monitorings: [],
       driveVolunteers: [],
       discussions: [],
+
       votingOpenAt: new Date(),
       votingCloseAt: new Date(input.startDate.getTime() + 7 * 24 * 60 * 60 * 1000),
       finalVoteCount: 0,
@@ -295,9 +299,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       drives: drives.map((d) => ({
         ...d,
         tasks: (d.tasks ?? []).map((t) =>
-          t.id === taskId
-            ? { ...t, volunteerId, status: TaskStatus.ASSIGNED, updatedAt: new Date() }
-            : t
+          t.id === taskId ? { ...t, volunteerId, status: 'ASSIGNED', updatedAt: new Date() } : t,
         ),
       })),
     });
@@ -309,7 +311,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       drives: drives.map((d) => ({
         ...d,
         tasks: (d.tasks ?? []).map((t) =>
-          t.id === taskId ? { ...t, status, updatedAt: new Date() } : t
+          t.id === taskId ? { ...t, status, updatedAt: new Date() } : t,
         ),
       })),
     });

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { MonitoringStatus } from "@prisma/client";
-import { Context } from "@/lib/context";
-import { requireAuth } from "@/lib/serverAuth";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { MonitoringStatus } from '@prisma/client';
+import { Context } from '@/lib/context';
+import { requireAuth } from '@/lib/serverAuth';
 
 // PATCH /api/monitoring/:id → update monitoring
 export async function PATCH(request: NextRequest, context: Context) {
@@ -17,16 +17,20 @@ export async function PATCH(request: NextRequest, context: Context) {
       where: { id },
       data: {
         notes: data.notes ?? undefined,
-        status: data.status && Object.values(MonitoringStatus).includes(data.status)
-          ? (data.status as MonitoringStatus)
-          : undefined,
+        status:
+          data.status && Object.values(MonitoringStatus).includes(data.status)
+            ? (data.status as MonitoringStatus)
+            : undefined,
         checkDate: data.checkDate ? new Date(data.checkDate) : undefined,
       },
     });
 
-    return NextResponse.json({ message: "Monitoring updated", monitoring: updated });
+    return NextResponse.json({
+      message: 'Monitoring updated',
+      monitoring: updated,
+    });
   } catch {
-    return NextResponse.json({ error: "Monitoring not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Monitoring not found' }, { status: 404 });
   }
 }
 
@@ -39,8 +43,8 @@ export async function DELETE(request: NextRequest, context: Context) {
     const { id } = await context.params;
     await prisma.monitoring.delete({ where: { id } });
 
-    return NextResponse.json({ message: "Monitoring deleted successfully" });
+    return NextResponse.json({ message: 'Monitoring deleted successfully' });
   } catch {
-    return NextResponse.json({ error: "Monitoring not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Monitoring not found' }, { status: 404 });
   }
 }

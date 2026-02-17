@@ -1,4 +1,4 @@
-declare module "imagekit" {
+declare module 'imagekit' {
   interface UploadResult {
     fileId: string;
     name: string;
