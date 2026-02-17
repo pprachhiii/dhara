@@ -8,7 +8,7 @@ interface StatsCardProps {
   title: string;
   value: string | number;
   description?: string;
-  icon: any;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   className?: string;
 }
 

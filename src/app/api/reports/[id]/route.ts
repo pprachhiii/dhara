@@ -4,6 +4,20 @@ import { ReportStatus } from '@prisma/client';
 import { requireAuth } from '@/lib/serverAuth';
 import { Context } from '@/lib/context';
 
+type ReportUpdateData = Partial<{
+  title: string;
+  description: string;
+  status: ReportStatus;
+  media: string[];
+  latitude: number | null;
+  longitude: number | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  pinCode: string | null;
+}>;
+
+
 // GET /api/reports/:id (public)
 export async function GET(request: NextRequest, context: Context) {
   try {
@@ -66,7 +80,7 @@ export async function PATCH(request: NextRequest, context: Context) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    const updateData: any = {};
+const updateData: ReportUpdateData = {};
 
     if (typeof data.title === 'string') {
       updateData.title = data.title.trim();

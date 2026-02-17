@@ -90,7 +90,8 @@ export default function AuthorityFormPage() {
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(' ');
 
-  const handleChange = (k: keyof AuthorityFormData, v: any) => setForm((p) => ({ ...p, [k]: v }));
+const handleChange = <K extends keyof AuthorityFormData>(k: K, v: AuthorityFormData[K]) =>
+  setForm((p) => ({ ...p, [k]: v }));
 
   /* ---------------- SUBMIT ---------------- */
 
@@ -229,7 +230,7 @@ export default function AuthorityFormPage() {
                   Category <Required />
                 </Label>
 
-                <Select value={form.category} onValueChange={(v) => handleChange('category', v)}>
+                <Select value={form.category} onValueChange={(v) => handleChange('category', v as AuthorityCategory | '')}>
                   <SelectTrigger>
                     <SelectValue placeholder='Select Category' />
                   </SelectTrigger>
@@ -249,7 +250,7 @@ export default function AuthorityFormPage() {
                   Role <Required />
                 </Label>
 
-                <Select value={form.role} onValueChange={(v) => handleChange('role', v)}>
+                <Select value={form.role} onValueChange={(v) => handleChange('role', v as AuthorityRole | '')}>
                   <SelectTrigger>
                     <SelectValue placeholder='Select Role' />
                   </SelectTrigger>

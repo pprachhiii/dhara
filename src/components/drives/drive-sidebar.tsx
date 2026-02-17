@@ -63,6 +63,11 @@ type DriveSidebarDrive = {
   }[];
 };
 
+type JoinDriveResponse = {
+  alreadyJoined?: boolean;
+  joined?: boolean;
+};
+
 export default function DriveSidebarClient({
   drive,
   volunteers,
@@ -72,7 +77,7 @@ export default function DriveSidebarClient({
   drive: DriveSidebarDrive;
   volunteers: DriveVolunteerItem[];
   alreadyVolunteer: boolean;
-  onJoin: (data: { timeSlot: string; preferredTaskId: string; notes: string }) => Promise<any>;
+  onJoin: (data: { timeSlot: string; preferredTaskId: string; notes: string }) => Promise<JoinDriveResponse>;
 }) {
   const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -150,11 +155,11 @@ export default function DriveSidebarClient({
                       <SelectValue placeholder='Choose a time slot...' />
                     </SelectTrigger>
                     <SelectContent>
-                      {drive.timeSlots?.map((slot: any) => (
-                        <SelectItem key={slot.id} value={slot.id}>
-                          {slot.label} ({slot.available} spots)
-                        </SelectItem>
-                      ))}
+                      {drive.timeSlots?.map((slot: DriveTimeSlot) => (
+  <SelectItem key={slot.id} value={slot.id}>
+    {slot.label} ({slot.available} spots)
+  </SelectItem>
+))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -167,11 +172,11 @@ export default function DriveSidebarClient({
                       <SelectValue placeholder='Any task' />
                     </SelectTrigger>
                     <SelectContent>
-                      {drive.tasks?.map((task: any) => (
-                        <SelectItem key={task.id} value={task.id}>
-                          {task.title}
-                        </SelectItem>
-                      ))}
+                      {drive.tasks?.map((task: DriveTask) => (
+  <SelectItem key={task.id} value={task.id}>
+    {task.title}
+  </SelectItem>
+))}
                     </SelectContent>
                   </Select>
                 </div>
