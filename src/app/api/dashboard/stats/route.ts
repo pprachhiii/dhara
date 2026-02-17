@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromPage } from '@/lib/pageAuth';
+import { Context } from '@/lib/context';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: Context) {
   const user = await getUserFromPage();
+  const { id } = await context.params;
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       data: {
         content: content.trim(),
         phase: 'GENERAL',
-        driveId: params.id,
+        driveId: id,
         userId: user.id,
       },
       include: {

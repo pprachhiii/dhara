@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/serverAuth';
+import { Context } from '@/lib/context';
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: Context) {
   const authResult = await requireAuth(request);
   if (authResult.error || !authResult.user) {
     return authResult.response!;
   }
+  const { id } = await context.params;
 
   try {
     const { content } = await request.json();
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       data: {
         content: content.trim(),
         phase: 'GENERAL',
-        driveId: params.id,
+        driveId: id,
         userId: authResult.user.id,
       },
       include: {
